@@ -21,6 +21,8 @@ import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
+from validate_figure_manifest import validate_manifest
+
 try:
     import yaml
 except ImportError:  # pragma: no cover
@@ -165,14 +167,37 @@ def save_figure(
     config: Mapping[str, Any],
     *,
     parameters: Mapping[str, Any] | None = None,
+    statistics: Mapping[str, Any] | None = None,
     input_files: Sequence[PathLike] = (),
     formats: Sequence[str] | None = None,
     close: bool = True,
 ) -> dict[str, Path]:
+    """Write an immutable figure bundle and optional formal statistics manifest."""
     stem = Path(output_stem).resolve()
     stem.parent.mkdir(parents=True, exist_ok=True)
     output_cfg = config["output"]
     selected = list(formats or output_cfg["formats"])
+    normalized_statistics = _json_safe(statistics) if statistics is not None else None
+    if normalized_statistics is not None:
+        missing, empty = validate_manifest(normalized_statistics)
+        if missing or empty:
+            raise ValueError(
+                "Invalid formal figure statistics manifest: "
+                f"missing={missing} empty={empty}"
+            )
+
+    target_paths = [stem.with_suffix(f".{extension.lower().lstrip('.')}") for extension in selected]
+    if output_cfg.get("write_parameter_sidecar", True):
+        target_paths.append(stem.with_suffix(".parameters.json"))
+    # A pre-existing formal manifest freezes the complete bundle, even if this
+    # invocation did not receive a new statistics mapping.
+    target_paths.append(stem.with_suffix(".parameters.statistics.json"))
+    existing = [path for path in target_paths if path.exists()]
+    if existing:
+        raise FileExistsError(
+            "Refusing to overwrite frozen figure bundle: "
+            + ", ".join(str(path) for path in existing)
+        )
     written: dict[str, Path] = {}
     for extension in selected:
         extension = extension.lower().lstrip(".")
@@ -212,6 +237,11 @@ def save_figure(
         with sidecar.open("w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2, ensure_ascii=False)
         written["parameters"] = sidecar
+    if normalized_statistics is not None:
+        statistics_sidecar = stem.with_suffix(".parameters.statistics.json")
+        with statistics_sidecar.open("w", encoding="utf-8") as handle:
+            json.dump(normalized_statistics, handle, indent=2, ensure_ascii=False)
+        written["statistics"] = statistics_sidecar
     if close:
         plt.close(fig)
     return written

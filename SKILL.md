@@ -447,3 +447,9 @@ Figure QA helper:
 ```bash
 python scripts/validate_figure_manifest.py figures/F05_08.parameters.statistics.json
 ```
+
+For a formal figure, pass the complete statistics mapping to
+`plotting_style.save_figure(..., statistics=...)`; it writes
+`<stem>.parameters.statistics.json`, which is the input to this validator.
+Rendering-only `parameters` are provenance metadata and are not a statistics
+manifest.

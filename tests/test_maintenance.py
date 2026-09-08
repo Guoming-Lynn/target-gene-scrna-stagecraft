@@ -18,7 +18,8 @@ import check_protocol as protocol
 import cluster_review_tables as review
 import part2_figures as part2
 import part3_figures as part3
-from plotting_style import load_plotting_config
+from plotting_style import load_plotting_config, save_figure
+import validate_figure_manifest as figure_manifest
 
 
 class Maintenance(unittest.TestCase):
@@ -141,6 +142,43 @@ class Maintenance(unittest.TestCase):
             np.testing.assert_array_equal(fig.axes[0].images[0].get_array(), [[2, 3], [0, 4]])
             fig.canvas.draw()
             self.assertGreater(np.asarray(fig.canvas.buffer_rgba()).std(), 0)
+
+    def test_figure_bundle_is_immutable_and_statistics_manifest_is_valid(self):
+        statistics = {
+            "estimand": "donor-unit association",
+            "biological_unit": "dataset × donor_id",
+            "n_definition": "eligible donor-units",
+            "n": 12,
+            "model_or_test": "limma-voom QW",
+            "effect_scale": "log2 fold change",
+            "error_bar": "95% CI",
+            "multiple_testing_family": "all target-excluded genes",
+            "adjustment": "BH",
+            "claim_ceiling": "association only",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            stem = Path(tmp) / "F05_08"
+            fig, ax = plt.subplots()
+            ax.plot([0, 1], [0, 1])
+            # Export drivers vary across local desktop installations; this
+            # contract test isolates the writer's paths and immutability logic.
+            with patch.object(fig, "savefig", side_effect=lambda path, **_kwargs: Path(path).touch()):
+                written = save_figure(
+                    fig, stem, load_plotting_config(), parameters={"plot": "test"},
+                    statistics=statistics, formats=["png"]
+                )
+            self.assertEqual(figure_manifest.main([str(written["statistics"])]), 0)
+            self.assertTrue(written["parameters"].is_file())
+            self.assertTrue(written["statistics"].is_file())
+            with self.assertRaises(FileExistsError):
+                save_figure(plt.figure(), stem, load_plotting_config())
+
+    def test_figure_rejects_incomplete_statistics_before_writing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stem = Path(tmp) / "F05_09"
+            with self.assertRaises(ValueError):
+                save_figure(plt.figure(), stem, load_plotting_config(), statistics={"estimand": "x"})
+            self.assertEqual(list(Path(tmp).iterdir()), [])
 
 
 if __name__ == "__main__":

@@ -31,7 +31,11 @@ when color encodes a scientific distinction.
 
 ## Statistical display
 
-The figure statistics manifest must state `n`, independent unit, model/test,
+The formal statistics manifest is produced by passing `statistics=` to
+`plotting_style.save_figure`; it is written as
+`<stem>.parameters.statistics.json`. Rendering `parameters` remain in the
+separate `<stem>.parameters.json` provenance sidecar. The figure statistics
+manifest must state `n`, independent unit, model/test,
 error-bar definition, multiple-testing family, effect scale, interval type,
 and exact claim ceiling. Error bars are never unlabeled. Do not put cell-level
 stars on donor-level figures. Do not display a p value without its test and
@@ -43,4 +47,3 @@ Render at final physical size and check: text clipping, missing glyphs, legend
 overflow, tick overlap, panel alignment, colorblind/grayscale distinguishability,
 empty-slot labels, correct input hashes, and consistency with `verdict.json`.
 Any failed check remains in the sidecar and blocks a publication-ready claim.
-
