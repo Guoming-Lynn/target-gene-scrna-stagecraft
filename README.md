@@ -39,10 +39,8 @@ formal gates; see the linked pilot table before using that mode.
 `~/.cursor/skills/`, or the Codex skills directory, then provide the agent a
 named target feature, tissue context, and library manifest.
 
-**As a CLI workflow:** install the pinned Python dependencies, generate the
-toy fixture with `python scripts/generate_toy_data.py --out toy.h5ad`, then
-execute the Part 1–6 commands in `SKILL.md` and the corresponding references.
-For a quick environment and smoke-gate demonstration, run `python quickstart.py --out quickstart_output`.
+**As a CLI workflow:** install the dependencies below, then execute the Part
+1–6 commands in `SKILL.md` and the corresponding references.
 
 An agent skill for **one pre-specified gene** in a multi-study single-cell atlas.
 
@@ -86,11 +84,24 @@ See `references/part6-virtual-knockout.md` and
 
 ## Install and release
 
-Build a versioned release archive with `python scripts/package_skill.py`.
-The archive is written next to this folder; verify its adjacent `.sha256.txt`
-sidecar before distributing it.
-Use `python scripts/package_skill.py --out-dir release` when the repository
-parent is not writable.
+Install runtime dependencies first:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
+```
+
+Part 5 additionally needs R with `Matrix`, `limma`, `edgeR`, `fgsea`,
+`statmod`, `jsonlite`, `yaml`, and `digest`. Run the R checks listed below
+after installing those packages.
+
+To build a distributable skill archive only after dependencies are installed:
+
+```bash
+python scripts/package_skill.py --out-dir release
+```
+
+Verify the adjacent `.sha256.txt` sidecar before distributing it.
 
 Unzip it so `SKILL.md` is at `target-gene-scrna-stagecraft/SKILL.md`, then copy that folder to:
 
@@ -161,8 +172,6 @@ formal runs must archive Python package resolution, R `sessionInfo()`, and the
 exact model/checkpoint hashes without including biological identifiers.
 
 ```bash
-python -m pip install -r requirements.txt
-python -m pip install -r requirements-dev.txt
 python scripts/_part5_smoke.py
 python scripts/_part6_smoke.py
 python -m unittest discover -s tests -p "test_*.py"

@@ -17,9 +17,8 @@ metadata:
 
 # Target-gene scRNA stagecraft
 
-New executor: use the [stage route and project arm checklist](references/start-here.md)
-to choose the next stage from available inputs before reading its detailed contract.
-
+New executor: read only the [stage route and project arm checklist](references/start-here.md)
+and the one specification for the selected Part. Do not preload every reference.
 Before freezing any analysis, read [research-validity.md](references/research-validity.md).
 This is the authoritative scientific contract for estimands, donor independence,
 source sensitivity, selection, QC/annotation audits and Part 6 inference.
@@ -85,9 +84,7 @@ and anti-patterns: [references/pipeline-map.md](references/pipeline-map.md).
 | **3** | Compartment recluster, contamination rounds, cluster diagnostic | **written** |
 | **4** | Subtype `TARGET_GENE` survey (descriptive; no DEG) | **written** |
 | **5** | Donor-unit association, enrichment, **source-block LODO in-protocol** | **written** |
-| **6** | Virtual KO of `TARGET_GENE` (pinned Geneformer; embedding shift) | **written** |
-| 7 | Non-target estimands (identity, clinical grouping) | later |
-| 8 | Named orthogonal claims (trajectory, CellChat, STRING, frozen module, bulk) | later |
+| **6** | Virtual KO of `TARGET_GENE` (pinned Geneformer; embedding shift) | **specified / not turnkey** |
 
 Spine is 1→2→3→4→5. Parts 6–8 are branches: they may hold or downgrade earlier
 wording; they may not upgrade it. Part 3 is a **loop** (each lineage, or a
@@ -123,8 +120,8 @@ no fake KO–OE pairing, axes say embedding shift. Do not predict expression.
 8. **Assert `TARGET_GENE` is in the common set** before clustering. If it is absent, stop. Do not swap in a homolog or a "similar" gene.
 9. **Do not cluster on the story.** Do not Harmony-correct donor, region, condition, disease, or `TARGET_GENE`. Do not name Leiden clusters by `TARGET_GENE`.
 10. **Delete-and-recompute.** If a cluster is debris/unresolved, archive those barcodes, reload retained cells from QC counts, and rerun HVG→Leiden. Never reuse the old UMAP.
-11. **Leiden is a human checkpoint.** The agent runs the resolution grid and stops. Wilcoxon top-20 and per-cluster QC are for the **selected** resolution only.
-12. **Every cluster gets a name or a DELETE.** Mapping keys must equal remaining Leiden IDs. The annotated h5ad is a new file.
+11. **Leiden is a file-gated human checkpoint.** The agent runs the resolution grid and stops. It may continue only when a non-empty `resolution_choice.yaml` exists with reviewer/date/evidence. Wilcoxon top-20 and per-cluster QC are for the **selected** resolution only.
+12. **Every cluster gets a name or a DELETE.** The agent may continue only when the completed KEEP/DELETE CSV has one row per cluster, reviewer/date, evidence and rationale, with no blanks. Mapping keys must equal remaining Leiden IDs. The annotated h5ad is a new file.
 13. **No DEG, no communication, no trajectory** until the global label key is locked.
 
 ### Implementation aids and provenance

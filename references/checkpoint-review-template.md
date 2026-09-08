@@ -3,6 +3,13 @@
 The reviewer must fill this table before the agent continues. A blank, copied,
 or target-gene-only rationale is a stop condition.
 
+File gate: Checkpoint A requires a non-empty `resolution_choice.yaml` containing
+the selected resolution, reviewer, date, evidence paths and rationale.
+Checkpoint B requires a completed KEEP/DELETE CSV with exactly one row per
+cluster and no blank decision, reviewer, date, evidence or rationale. Until the
+required file exists and passes these checks, scripts and agent instructions
+must stop; a verbal approval or chat message is not sufficient.
+
 | Field | Required entry |
 |---|---|
 | stage/round | exact stage and round identifier |
@@ -22,4 +29,3 @@ For STOP POINT 3 the mapping must be complete and DELETE count must be zero.
 If reviewers disagree, preserve both rows, adjudicate explicitly, and run the
 prewritten alternative-label sensitivity if the disagreement changes a Part 4
 or Part 5 population. An agent may not invent a biological label to fill a blank.
-
