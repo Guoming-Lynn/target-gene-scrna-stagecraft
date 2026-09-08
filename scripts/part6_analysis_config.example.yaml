@@ -1,0 +1,78 @@
+# Example Part 6 analysis config. Copy into 00_protocol_manifest/ and freeze.
+# Fill hashes after the objects exist. Do not invent a second checkpoint.
+
+target_gene: TARGET_GENE
+species: human
+subtype_key: subtype_final
+subtype_value: "EXACT LOCKED STRING"
+
+h5ad: path/to/part3_locked.h5ad
+h5ad_sha256: REPLACE
+counts_layer: counts
+normalized_layer: normalized
+dataset_key: dataset
+donor_key: donor_id
+unit_key: dataset_donor_id
+
+min_cells_per_unit: 10
+seed: 42
+
+perturbations:
+  - KO
+  # - OE   # uncomment only if STOP POINT 0 froze OE
+
+geneformer:
+  repo: ctheodoris/Geneformer
+  revision: 04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5
+  checkpoint: Geneformer-V2-104M
+  max_length: 4096
+  max_gene_tokens: 4094
+  emb_layer: -1
+  hidden_state_index: 11
+  batch_size: 8
+  nproc: 1
+  smoke_max_cells: 300
+  smoke_donors: 3
+  smoke_cells_per_donor: 100
+  wrapper_official_cosine_max: 1.0e-5
+  determinism_max: 1.0e-6
+  sham_max: 1.0e-6
+  wallclock_hours_cap: 24
+  disk_gb_cap: 25
+
+endpoints:
+  primary:
+    - {id: ENDPOINT_A, path: path/to/set_a.txt, sha256: REPLACE, min_frac: 0.70, min_genes: 10}
+    - {id: ENDPOINT_B, path: path/to/set_b.txt, sha256: REPLACE, min_frac: 0.70, min_genes: 10}
+  support: []
+  # direction_control: {id: COMPLEX_II, path: path/to/c2.txt, sha256: REPLACE, min_frac: 1.0, min_genes: 4}
+
+prespecified_direction:
+  KO: positive   # toward baseline-high; caption only, not a one-sided test
+  OE: negative
+
+donor_gates:
+  KO_min_success_cells: 5
+  OE_min_success_cells: 10
+  symmetry_min_success_cells: 5
+  min_cells_for_axis: 10
+  min_side_quartile: 3
+  quartile: 0.25
+  min_valid_donor_axes: 11
+  min_loo_training_axes: 10
+  min_nonzero_donors_for_sign: 5
+  near_zero: 1.0e-6
+
+controls:
+  max_n: 10
+  min_n_for_ranks: 5
+  window_detection: 0.05
+  window_log2_mean: 0.5
+  expand_detection: 0.10
+  expand_log2_mean: 1.0
+
+parent_part5_verdict: PART5_NOT_RUN
+evidence_ceiling: exploratory
+can_only_downgrade: true
+family_size: 2   # primary endpoints × declared perturbations; do not shrink
+

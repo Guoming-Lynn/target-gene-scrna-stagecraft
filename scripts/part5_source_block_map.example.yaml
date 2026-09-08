@@ -1,0 +1,7 @@
+# Example source_block map. Copy into 00_protocol_manifest/ and freeze.
+# Default in code is source_block = dataset. Consecutive GSE IDs are a
+# suggestion, not an automatic merge.
+GSE000001: BLOCK_A
+GSE000002: BLOCK_A
+GSE000003: EXT
+

@@ -1,0 +1,47 @@
+# Ordered verdict table. First matching row wins.
+# Used by scripts/part5_verdict.py
+
+rows:
+  - token: REPRODUCTION_FAILED
+    when:
+      full_reproduced: false
+  - token: NOT_ESTIMABLE
+    when:
+      full_status: NOT_ESTIMABLE
+  - token: COLLINEAR_UNINTERPRETABLE
+    when:
+      collinear_uninterpretable: true
+  - token: SINGLE_SOURCE_DEPENDENT
+    when:
+      source_dependent: true
+  - token: PARTIALLY_CONFOUNDED
+    when:
+      q_pass: true
+      confound_cleared: false
+  - token: FROZEN_PASS_WITH_SENSITIVITY_CAVEAT
+    when:
+      full_status: SUCCESS
+      dual_method_same_sign: true
+      lodo_all_same_sign: true
+      rdf_ok: true
+      q_pass: true
+      formal_gates_pass: true
+      lodo_complete: true
+      collinearity_review_required: false
+      confound_cleared: true
+      sensitivity_pass: false
+  - token: FROZEN_PASS
+    when:
+      full_status: SUCCESS
+      dual_method_same_sign: true
+      lodo_all_same_sign: true
+      rdf_ok: true
+      q_pass: true
+      formal_gates_pass: true
+      lodo_complete: true
+      collinearity_review_required: false
+      confound_cleared: true
+      sensitivity_pass: true
+  - token: INCONCLUSIVE
+    when: {}
+

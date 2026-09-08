@@ -1,0 +1,5 @@
+target-version = "py311"
+
+[lint]
+# Stable correctness checks across development machines and CI.
+select = ["E9", "F"]

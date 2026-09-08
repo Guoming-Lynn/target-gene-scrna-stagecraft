@@ -1,0 +1,73 @@
+# Default publication theme for Parts 1–6.
+# Copy into the stage folder and freeze. Do not invent a second theme.
+
+fonts:
+  latin: [Arial, Helvetica, DejaVu Sans]
+  cjk: [Microsoft YaHei, SimHei, DejaVu Sans]
+  mathtext: dejavusans
+  pdf_fonttype: 42
+  ps_fonttype: 42
+  svg_fonttype: none
+
+figure_sizes_inches:
+  single_panel: [3.45, 3.15]
+  double_panel: [7.10, 3.20]
+  wide_panel: [8.60, 4.00]
+  multi_panel: [9.00, 7.20]
+
+output:
+  png_dpi: 300
+  formats: [png, pdf, svg]
+  transparent: false
+  bbox_inches: tight
+  pad_inches: 0.04
+  write_parameter_sidecar: true
+
+theme:
+  background: "#FFFFFF"
+  foreground: "#202124"
+  axis_linewidth: 0.8
+  grid_color: "#D9D9D9"
+  grid_alpha: 0.35
+  base_fontsize: 8.0
+  title_fontsize: 9.5
+  label_fontsize: 8.5
+  tick_fontsize: 7.5
+  legend_fontsize: 7.0
+  colorblind_continuous: viridis
+  expression_continuous: magma
+  divergent: RdBu_r
+  unknown: "#808080"
+  undetected: "#D9D9D9"
+  detected: "#D73027"
+  median: "#B2182B"
+  retained: "#0072B2"
+  removed: "#D55E00"
+  cluster_cycle:
+    - "#0072B2"
+    - "#D55E00"
+    - "#009E73"
+    - "#CC79A7"
+    - "#E69F00"
+    - "#56B4E9"
+    - "#F0E442"
+    - "#999999"
+    - "#1B9E77"
+    - "#D95F02"
+    - "#7570B3"
+    - "#E7298A"
+
+umap:
+  embedding_key: X_umap
+  rasterized_points: true
+  point_size:
+    under_5000: 8.0
+    under_20000: 3.5
+    under_75000: 1.25
+    otherwise: 0.65
+  alpha:
+    under_5000: 0.85
+    under_20000: 0.72
+    under_75000: 0.58
+    otherwise: 0.45
+

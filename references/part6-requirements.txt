@@ -1,0 +1,7 @@
+# Geneformer-only dependencies for Part 6; install in a separate Python 3.10 environment.
+torch==2.0.1
+transformers==4.30.2
+datasets==2.13.1
+anndata==0.9.2
+huggingface-hub==0.36.2
+

@@ -1,0 +1,26 @@
+# Ordered Part 6 verdicts. First matching row wins.
+# Copy into 00_protocol_manifest/verdict_table.yaml after filling STOP POINT 0.
+
+rows:
+  - token: STOPPED
+    when: {blocker: true}
+    reason: hash, label, mapping, coverage, smoke, axis, or identity blocker
+  - token: TOKEN_UNOBSERVABLE
+    when: {ko_eligible_cells: 0}
+    reason: TARGET_GENE never present in the final V2 sequence
+  - token: NOT_ESTIMABLE
+    when: {n_sign_tests_run: 0}
+    reason: no primary cell of the family had ≥5 non-near-zero donor medians
+  - token: SHAM_DRIFT
+    when: {sham_pass: false}
+    reason: unmodified re-inference exceeded the freeze; do not interpret Δaxis
+  - token: EMBEDDING_SHIFT_CONSISTENT
+    when: {ko_primary_bh_pass: true}
+    reason: declared KO primary family passed BH at the freeze; still exploratory embedding
+  - token: PASS_WITH_LIMITATIONS
+    when: {run_finished: true}
+    reason: scientific run finished; unpaired KO/OE, thin controls, or parent Part 5 already limited
+  - token: INCONCLUSIVE
+    when: {}
+    reason: no earlier row matched
+

@@ -1,0 +1,97 @@
+# Example Part 5 analysis_config.yaml
+# Copy into 00_protocol_manifest/ and freeze. Do not invent a second estimand here.
+
+protocol_version: "1.0.0"
+part: 5_donor_association
+target_gene: SYMBOL
+evidence_ceiling: exploratory
+random_seed: 20260905
+
+estimand:
+  mode: subtype_specific  # choose exactly one subtype in arms.labels
+
+diagnostics:
+  rho_review: 0.90
+  vif_review: 10.0
+  condition_review: 30.0
+
+paths:
+  h5ad: path/to/locked_subtype.h5ad
+  pseudobulk_dir: 03_pseudobulk
+  tables_dir: 02_tables
+  logs_dir: 05_logs
+  figures_dir: 03_figures
+  fit_rds: 05_logs/primary_fit.rds
+
+obs:
+  group_key: subtype
+  dataset_key: dataset
+  donor_key: donor_id
+  unit_key: dataset_donor_id
+
+arms:
+  - name: ALL_FORMAL
+    labels: []          # empty = all labels except unlikely patterns
+    min_cells: 20
+    unit_includes_group: true
+
+exposure:
+  primary: jeffreys_per_10pct
+  alternative: z_log2cpm
+  freeze_z_on: full     # enforced: full eligible frozen arm; reuse in every subset
+  sd_jeffreys_floor: 0.5
+  sd_log2cpm_floor: 0.15
+
+design:
+  categorical: [subtype, dataset]
+  numeric: [z_log1p_n_cells, z_log1p_mean_umi, jeffreys_per_10pct]
+  block: dataset_donor_id
+  drop_single_level: true
+
+eligibility:
+  n_formal: 12
+  n_exploratory: 8
+  min_datasets_formal: 3
+  min_rdf_formal: 6
+  min_rdf_fit: 4
+  min_rdf_holdout: 3
+
+gene_filter:
+  cpm_threshold: 1.0
+  min_unit_fraction: 0.20
+  min_units_absolute: 3
+
+models:
+  robust_ebayes: true
+  support_edger: true
+  logfc_floor: 0.10
+  q_cut: 0.05
+
+robustness:
+  dominant_block: DOMINANT
+
+# No parent comparison is claimed in a first run. For reproduction, set true
+# and add path, sha256, abs_tol, and optional genes (frozen coefficient anchors).
+reproduction:
+  required: false
+
+# Supply measured confound_cleared/sensitivity_pass booleans after diagnostics.
+# Missing diagnostics keep the default verdict INCONCLUSIVE.
+# audit_flags: {path: 02_tables/diagnostic_flags.json, sha256: REPLACE}
+
+source_block_map: 00_protocol_manifest/source_block_map.yaml
+verdict_table: 00_protocol_manifest/verdict_table.yaml
+
+gmt:
+  - path: resources/gmt/hallmark.json
+    sha256: REPLACE
+  - path: resources/gmt/kegg.json
+    sha256: REPLACE
+  - path: resources/gmt/go_bp.json
+    sha256: REPLACE
+
+subsets:
+  FULL: {drop_blocks: []}
+  DROP_EXT: {drop_blocks: [EXT]}
+  DROP_DOMINANT: {drop_blocks: [DOMINANT]}
+

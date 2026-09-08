@@ -1,0 +1,29 @@
+# Redacted environment record. Fill in exact versions before a formal run.
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base>=4.3,<5
+python: "3.11.x"
+python_packages:
+  numpy: "2.4.6"
+  pandas: "2.3.3"
+  scipy: "<record exact version>"
+  anndata: "0.12.19"
+  scanpy: "1.11.5"
+  matplotlib: "<record exact version>"
+  seaborn: "<record exact version>"
+r:
+  version: "4.5.2"
+  packages:
+    limma: "<from sessionInfo()>"
+    edgeR: "<from sessionInfo()>"
+    fgsea: "<from sessionInfo()>"
+model_runtime:
+  pytorch: "<exact version>"
+  transformers: "<exact version>"
+  geneformer_revision: "<exact revision>"
+  checkpoint_sha256: "<sha256>"
+  token_dictionary_sha256: "<sha256>"
+
