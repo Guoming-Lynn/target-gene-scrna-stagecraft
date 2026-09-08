@@ -11,6 +11,7 @@ CONTRIBUTING.md
 INSTALL.md
 LICENSE
 README.md
+README.zh-CN.md
 SECURITY.md
 SKILL.md
 environment.example.yaml

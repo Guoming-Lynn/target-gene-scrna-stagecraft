@@ -1,5 +1,27 @@
 # target-gene-scrna-stagecraft
 
+[中文说明](README.zh-CN.md) · English
+
+## What this answers
+
+For one pre-specified gene, can its signal be measured and associated across
+multi-study single-cell data at the donor-unit level, with QC, source
+sensitivity, and an explicit ceiling on biological claims?
+
+This is a protocol-driven analysis skill, not a generic Scanpy tutorial: it
+keeps libraries separate during QC, treats `dataset × donor_id` as the unit,
+and forbids cell-level DEG shortcuts.
+
+## Try it first
+
+```bash
+python quickstart.py --out quickstart_output
+python scripts/generate_toy_data.py --out toy.h5ad
+```
+
+The quickstart runs helper smoke checks only. It does not claim a biological
+result or execute Geneformer.
+
 Start with the [stage route and project arm checklist](references/start-here.md).
 
 **Scientific calibration is incomplete.** Passing smoke tests or a `FROZEN_PASS`
@@ -11,7 +33,7 @@ The 1.9.8 null pilot found elevated BH false discoveries in the repeated-donor
 mode. `joint_common_slope` is consequently exploratory only and cannot pass
 formal gates; see the linked pilot table before using that mode.
 
-## Two ways to use this package
+## Use it as a skill or CLI
 
 **As an AI skill:** mount this directory under `~/.claude/skills/`,
 `~/.cursor/skills/`, or the Codex skills directory, then provide the agent a
@@ -29,7 +51,7 @@ libraries before QC, treating Scrublet failure as "all singlets", clustering on
 union-gene zeros, naming Leiden clusters after the gene you care about, and
 calling 100k cells a sample size.
 
-## Status
+## Scope and status
 
 **Part 1 is written:** per-library QC → strict common-gene merge → Leiden
 resolution grid (human picks) → top-20 markers + per-cluster QC → complete
@@ -54,13 +76,15 @@ Target-excluded pseudobulk, limma-voom + edgeR, CAMERA/fgsea, donor LOO
 **and source-block LODO in the same protocol**. `NOT_ESTIMABLE` is a result.
 See `references/part5-donor-association.md` and `references/part5-figures.md`.
 
-**Part 6 is written:** pinned official Geneformer virtual knockout of
+**Part 6 is specified and audited, but is not turnkey:** it requires a separate
+pinned Geneformer environment, licensed model weights and model-parity checks.
+It performs virtual knockout/optional OE of
 `TARGET_GENE` on a locked subtype. Embedding-axis shift, donor-equal sign
 tests, KO/OE unpaired when cell sets differ. Not predicted expression.
 See `references/part6-virtual-knockout.md` and
 `references/part6-figures.md`.
 
-## Install
+## Install and release
 
 Build a versioned release archive with `python scripts/package_skill.py`.
 The archive is written next to this folder; verify its adjacent `.sha256.txt`
@@ -76,8 +100,8 @@ Unzip it so `SKILL.md` is at `target-gene-scrna-stagecraft/SKILL.md`, then copy 
 | Cursor | `~/.cursor/skills/target-gene-scrna-stagecraft/` or `<repo>/.cursor/skills/` |
 | Claude Code | `~/.claude/skills/target-gene-scrna-stagecraft/` or `<repo>/.claude/skills/` |
 
-Folder name may be `strict-scrna-stagecraft`; the frontmatter `name` is
-`target-gene-scrna-stagecraft`.
+Use the repository name and skill name `target-gene-scrna-stagecraft`.
+Do not rename the folder when mounting it for an agent.
 
 Ask the agent to open Part 1 with a named `TARGET_GENE` and a GEO/library list.
 After labels are locked, open Part 2 for the gene figure catalog

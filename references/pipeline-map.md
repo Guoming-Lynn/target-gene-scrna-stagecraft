@@ -30,7 +30,10 @@ origin of each pattern. They are not a required directory scheme.
 
 ---
 
-## The eight parts
+## The six public parts
+
+Parts 7–8 below are historical/future claim types only; they are not
+implemented or included in the public workflow.
 
 | Part | Job | Your folders (origin) | Status |
 |---|---|---|---|
@@ -259,5 +262,4 @@ Keep writing one part at a time. Do not draft 6–8 in one pass.
 
 Default split remains: expensive model writes the part spec; cheap model
 executes a frozen protocol.
-
 

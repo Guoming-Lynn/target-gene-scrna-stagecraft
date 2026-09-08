@@ -12,7 +12,7 @@ description: >-
 license: MIT
 metadata:
   version: "2.0.0"
-  scope: "Parts 1–6 implemented. Part 6 is virtual knockout of TARGET_GENE."
+  scope: "Parts 1–5 main path; Part 6 separately specified Geneformer branch."
 ---
 
 # Target-gene scRNA stagecraft
@@ -74,7 +74,8 @@ Do **not** use this skill to:
 
 ## Pipeline map
 
-Eight parts. Not thirty-two folders. The map, folder-to-part table, stop rules,
+Six public parts. Parts 7–8 are future claim types, not part of this release.
+The map, folder-to-part table, stop rules,
 and anti-patterns: [references/pipeline-map.md](references/pipeline-map.md).
 
 | Part | Job | Status |
