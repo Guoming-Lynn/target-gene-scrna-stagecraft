@@ -48,9 +48,11 @@ references/stage-layout.md
 references/start-here.md
 references/statistical-stack.md
 references/validated-environment.md
+references/upstream-life-sciences-influences.md
 references/visual-qa-contract.md
 release-files.txt
 requirements.txt
+requirements-dev.txt
 ruff.toml
 scripts/_part5_smoke.py
 scripts/_part6_smoke.py

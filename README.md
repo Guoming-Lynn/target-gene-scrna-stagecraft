@@ -65,6 +65,8 @@ See `references/part6-virtual-knockout.md` and
 Build a versioned release archive with `python scripts/package_skill.py`.
 The archive is written next to this folder; verify its adjacent `.sha256.txt`
 sidecar before distributing it.
+Use `python scripts/package_skill.py --out-dir release` when the repository
+parent is not writable.
 
 Unzip it so `SKILL.md` is at `target-gene-scrna-stagecraft/SKILL.md`, then copy that folder to:
 
@@ -124,8 +126,9 @@ validators intentionally do not judge biological correctness; they now reject
 very short/empty protocols, but a passing validator is not a substitute for
 the required evidence worksheet and human review.
 
-Use a dedicated Python environment (tested here with Python 3.11). Dependency
-ranges are installation constraints, not a guarantee for every combination.
+Use a dedicated Python 3.10 or 3.11 environment. CI exercises both versions on
+Linux, macOS, and Windows. Dependency ranges are installation constraints, not
+a guarantee for every combination.
 For interpreter selection and the separate Part 6 environment see INSTALL.md:
 
 The validated project baseline is recorded in `environment.example.yaml`.
@@ -135,6 +138,7 @@ exact model/checkpoint hashes without including biological identifiers.
 
 ```bash
 python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 python scripts/_part5_smoke.py
 python scripts/_part6_smoke.py
 python -m unittest discover -s tests -p "test_*.py"

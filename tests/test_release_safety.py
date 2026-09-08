@@ -105,3 +105,17 @@ class ReleaseSafety(unittest.TestCase):
         files = package_skill.release_files(ROOT)
         self.assertIn(ROOT / 'LICENSE', files)
         self.assertIn(ROOT / 'scripts/part6_verdict.py', files)
+
+    def test_packager_accepts_an_explicit_output_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'skill'
+            root.mkdir()
+            (root / 'SKILL.md').write_text('---\nmetadata: {version: "1.0"}\n---\n')
+            (root / 'release-files.txt').write_text('SKILL.md\nrelease-files.txt\n')
+            output = Path(tmp) / 'release'
+            output.mkdir()
+            with patch.object(package_skill, '__file__', str(root / 'scripts' / 'package_skill.py')):
+                # The library entry point keeps repository selection explicit;
+                # this verifies callers can choose a writable destination.
+                archive = package_skill.package(root, output)
+            self.assertEqual(archive.parent, output)

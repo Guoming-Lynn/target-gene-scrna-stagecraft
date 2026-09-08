@@ -126,6 +126,30 @@ no fake KO–OE pairing, axes say embedding shift. Do not predict expression.
 12. **Every cluster gets a name or a DELETE.** Mapping keys must equal remaining Leiden IDs. The annotated h5ad is a new file.
 13. **No DEG, no communication, no trajectory** until the global label key is locked.
 
+### Implementation aids and provenance
+
+The recommended implementation pattern is modular: calculate QC metrics,
+detect outliers, apply hard caps, filter cells, and export an attrition summary
+as separate steps. This follows the public `single-cell-rna-qc` skill, while
+the ordering and thresholds above remain authoritative. Each library must
+produce a machine-readable QC record containing its input hash, metric
+parameters, Scrublet status/threshold, singlet count, MAD bounds, hard-cap
+results, and final retained count. A failed Scrublet call must be represented
+as a failed record and cannot silently become an all-singlet result.
+
+Keep the integer `layers["counts"]` layer immutable and validate its type and
+shape before normalization or integration. This is an implementation pattern
+adapted from `scvi-tools`; a learned latent space remains an optional branch
+and cannot replace the frozen atlas or donor-level estimand.
+
+For future FASTQ-scale execution, use an environment preflight, a tiny test
+profile, pinned tool/container versions, validated samplesheets, and resumable
+work directories. These controls are adapted from `nextflow-development`;
+resuming may reuse completed work but may not overwrite a frozen output.
+
+The exact upstream commit, license, and adaptation boundaries are recorded in
+[references/upstream-life-sciences-influences.md](references/upstream-life-sciences-influences.md).
+
 ## Part 1 lifecycle
 
 ```text

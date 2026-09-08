@@ -12,7 +12,8 @@ Release packaging uses the exact file whitelist in `release-files.txt`.
 Review and update it when adding source files; files not listed are excluded.
 
 Use Python 3.10 or 3.11 with `python -m pip install -r requirements.txt`.
-The lint configuration targets Python 3.11; CI uses Python 3.11.
+CI runs the Python checks on both versions and on Linux, macOS, and Windows.
+For the local test and lint tools, also install `python -m pip install -r requirements-dev.txt`.
 Run `python scripts/check_environment.py --stage part5` before Part 5; use
 `part1` through `part6` for the intended stage. Exit 2 blocks that stage.
 The default profile is helper smoke only. Dependency imports do not certify

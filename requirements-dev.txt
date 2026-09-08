@@ -1,0 +1,3 @@
+# Reproducible local checks. Runtime dependencies remain in requirements.txt.
+pytest>=8,<9
+ruff==0.16.6

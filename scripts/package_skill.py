@@ -1,4 +1,5 @@
 """Package only the explicitly reviewed files in release-files.txt."""
+import argparse
 from pathlib import Path
 import hashlib
 import zipfile
@@ -30,7 +31,11 @@ def package(root, output_dir=None):
     files = release_files(root)
     metadata = yaml.safe_load((root / "SKILL.md").read_text(encoding="utf-8").split("---", 2)[1])
     version = metadata["metadata"]["version"]
-    output = Path(output_dir or root.parent) / f"{root.name}-{version}.zip"
+    destination = Path(output_dir or root.parent)
+    destination.mkdir(parents=True, exist_ok=True)
+    if not destination.is_dir():
+        raise SystemExit(f"Release output path is not a directory: {destination}")
+    output = destination / f"{root.name}-{version}.zip"
     sidecar = output.with_suffix(".sha256.txt")
     if output.exists() or sidecar.exists():
         raise SystemExit("Versioned package already exists")
@@ -46,6 +51,17 @@ def package(root, output_dir=None):
     return output
 
 
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        help="Directory for the archive and SHA-256 sidecar (defaults to the repository parent).",
+    )
+    args = parser.parse_args(argv)
+    package(Path(__file__).resolve().parents[1], args.out_dir)
+
+
 if __name__ == "__main__":
-    package(Path(__file__).resolve().parents[1])
+    main()
 
