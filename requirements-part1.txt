@@ -4,5 +4,5 @@
 -r requirements.txt
 scrublet>=0.2,<1
 harmonypy>=0.0.10,<1
-igraph>=0.10,<1
+igraph>=0.10,<2
 leidenalg>=0.9,<1
