@@ -3,6 +3,6 @@
 # Install with: python -m pip install -r requirements-part1.txt
 -r requirements.txt
 scrublet>=0.2,<1
-harmonypy>=0.0.10,<1
+harmonypy>=0.0.10,<3
 igraph>=0.10,<1
 leidenalg>=0.9,<1
