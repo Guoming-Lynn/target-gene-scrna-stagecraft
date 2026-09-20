@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: target-gene-scrna-stagecraft
+message: If you use this software, please cite it using these metadata.
+type: software
+authors:
+  - family-names: Lin
+    given-names: Guoming
+    email: guoming.lin.med@gmail.com
+license: MIT
+repository-code: https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft
+version: 2.1.0
+date-released: "2026-09-20"
+keywords:
+  - single-cell RNA-seq
+  - donor-level association
+  - protocol
+abstract: >-
+  Protocol-driven analysis skill for one pre-specified gene in multi-study
+  single-cell RNA-seq, with library-level QC rules, donor-unit association,
+  and an explicit ceiling on biological claims.

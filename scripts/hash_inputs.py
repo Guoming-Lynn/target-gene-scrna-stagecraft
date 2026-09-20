@@ -10,25 +10,22 @@ Looks for keys named path, paths, input, inputs, or values that look like files.
 """
 from __future__ import annotations
 
-import hashlib
 import argparse
 import json
 import re
 import sys
 from pathlib import Path
 
-try:
-    import yaml  # type: ignore
-except ImportError:
-    yaml = None
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.hashing import sha256_file
+from stagecraft.io import load_yaml
 
 
 def sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    return sha256_file(path)
 
 
 def collect(obj, out: list[str]) -> None:
@@ -54,12 +51,9 @@ def collect(obj, out: list[str]) -> None:
 
 
 def load(path: Path):
-    raw = path.read_text(encoding="utf-8")
     if path.suffix.lower() in {".json"}:
-        return json.loads(raw)
-    if yaml is None:
-        raise SystemExit("PyYAML required for yaml manifests: pip install pyyaml")
-    return yaml.safe_load(raw)
+        return json.loads(path.read_text(encoding="utf-8"))
+    return load_yaml(path)
 
 
 def hashed_entries(obj):

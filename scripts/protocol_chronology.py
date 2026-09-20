@@ -1,12 +1,20 @@
 """Local freeze receipts detect accidental amendments; not trusted preregistration."""
-import hashlib
+from __future__ import annotations
+
 import json
+import sys
 import time
 from pathlib import Path
 
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.hashing import sha256_file
+
 
 def sha256(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    return sha256_file(path)
 
 
 def check_chronology(protocol, stage_root, freeze=False):

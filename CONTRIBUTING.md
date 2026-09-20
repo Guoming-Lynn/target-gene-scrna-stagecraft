@@ -12,6 +12,7 @@ Thank you for improving the workflow.
 Run the checks appropriate to the change:
 
 ```bash
+python -m pip install -e . -r requirements-dev.txt
 ruff check .
 python -m pytest -q tests
 python quickstart.py --out quickstart_output

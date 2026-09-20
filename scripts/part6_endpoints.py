@@ -14,20 +14,22 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import hashlib
+import sys
 from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
 
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    yaml = None
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.hashing import sha256_file
+from stagecraft.io import load_yaml, require_new
 
 
 def sha256_text(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return sha256_file(path)
 
 
 def read_members(path: Path) -> list[str]:
@@ -126,9 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--target", required=True)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
-    if yaml is None:
-        raise SystemExit("PyYAML required")
-    raw = yaml.safe_load(args.sets.read_text(encoding="utf-8")) or {}
+    raw = load_yaml(args.sets) or {}
     specs: list[dict] = []
     for role in ("primary", "support"):
         for item in raw.get(role) or []:
@@ -144,8 +144,7 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     members_out = args.out.with_name(args.out.stem + "_members.csv")
     for path in (args.out, members_out):
-        if path.exists():
-            raise SystemExit(f"Refusing to overwrite: {path}")
+        require_new(path)
     table.drop(columns=["visible_genes"]).to_csv(args.out, index=False)
     long_rows = []
     for row in table.itertuples(index=False):

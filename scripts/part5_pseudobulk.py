@@ -22,23 +22,23 @@ from scipy import sparse
 from scipy.io import mmwrite
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
+_ROOT = SCRIPT_DIR.parent
+for _path in (str(_ROOT), str(SCRIPT_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 try:
     import anndata as sc
 except ImportError:  # pragma: no cover
     sc = None
 
+from stagecraft.io import CSV_EXCEL, require_new
+from stagecraft.numeric import nonpositive
+
 UNLIKELY_PATTERN = re.compile(
     r"unresolved|stressed|doublet|debris|contaminant|low[\s_-]?qc",
     re.I,
 )
-
-
-def _require_new(path: Path) -> None:
-    if path.exists():
-        raise SystemExit(f"Refusing to overwrite: {path}")
 
 
 def counts_csr(adata):
@@ -73,7 +73,7 @@ def jeffreys_per_10pct(n_detected: np.ndarray, n_cells: np.ndarray) -> np.ndarra
 def zscore_full(values: np.ndarray) -> np.ndarray:
     values = np.asarray(values, dtype=float)
     sd = np.nanstd(values, ddof=1)
-    if not np.isfinite(sd) or sd == 0:
+    if nonpositive(float(sd)):
         return np.zeros_like(values)
     return (values - np.nanmean(values)) / sd
 
@@ -209,11 +209,11 @@ def write_pseudobulk(
     genes_path = out_dir / "genes.csv"
     audit_path = out_dir / "pseudobulk_audit.json"
     for path in (mtx_path, meta_path, genes_path, audit_path):
-        _require_new(path)
+        require_new(path)
 
     mmwrite(mtx_path, counts)
-    meta.to_csv(meta_path, index=False, encoding="utf-8-sig")
-    genes.to_csv(genes_path, index=False, encoding="utf-8-sig")
+    meta.to_csv(meta_path, index=False, encoding=CSV_EXCEL)
+    genes.to_csv(genes_path, index=False, encoding=CSV_EXCEL)
     audit = {
         "target_gene": gene,
         "n_genes": int(counts.shape[0]),

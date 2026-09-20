@@ -6,7 +6,14 @@ the authority for estimands, thresholds, exclusions, and claims.
 
 Pinned reference: `anthropics/life-sciences` commit
 [`e96556b637b56d6cc3a5ad33987009be9e60aa5c`](https://github.com/anthropics/life-sciences/tree/e96556b637b56d6cc3a5ad33987009be9e60aa5c).
-The three referenced directories are distributed under Apache License 2.0.
+SPDX-License-Identifier for those three upstream directories: Apache-2.0.
+Cite the upstream repository at that commit if you reuse the same design notes.
+
+| Upstream directory | License | What was borrowed |
+|---|---|---|
+| `single-cell-rna-qc` | Apache-2.0 | Stepwise QC reporting |
+| `scvi-tools` skill notes | Apache-2.0 | Immutable counts-layer checks |
+| `nextflow-development` | Apache-2.0 | Preflight, pins, resumable work |
 
 ## `single-cell-rna-qc`
 

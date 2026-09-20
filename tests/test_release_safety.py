@@ -105,6 +105,8 @@ class ReleaseSafety(unittest.TestCase):
         files = package_skill.release_files(ROOT)
         self.assertIn(ROOT / 'LICENSE', files)
         self.assertIn(ROOT / 'scripts/part6_verdict.py', files)
+        self.assertIn(ROOT / 'stagecraft/__init__.py', files)
+        self.assertIn(ROOT / 'scripts/demo_toy_run.py', files)
 
     def test_packager_accepts_an_explicit_output_directory(self):
         with tempfile.TemporaryDirectory() as tmp:

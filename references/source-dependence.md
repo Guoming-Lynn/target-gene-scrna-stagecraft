@@ -21,7 +21,18 @@ Assign `source_block` from repository-internal evidence only (metadata, donor ID
 
 Tiers: `SAME_STUDY_LIKELY` | `SAME_STUDY_CONFIRMED` | `UNRESOLVED`. The holdout design does not change with the tier.
 
-Also write exposure mean/sd/IQR per dataset. Flag `NO_EXPOSURE_RANGE` when sd is below the protocol threshold (default 0.5 on the modeled exposure scale).
+Also write exposure mean/sd/IQR per dataset. Flag `NO_EXPOSURE_RANGE` when sd
+is below the **modeled exposure** floor frozen in the protocol. Code defaults
+(`scripts/part5_analysis_config.example.yaml` and `--sd-floor` / `--min-sd`):
+
+| Scale | Starting floor | Where it applies |
+|---|---|---|
+| `jeffreys_per_10pct` | 0.5 | Part 5 eligibility and source-block audit |
+| log2(CPM+1) | 0.15 | Part 4 forecast and Part 5 alternative exposure |
+| detection fraction | 0.02 | Part 4 forecast only |
+
+Do not mix these floors across scales. Amend them in the protocol; do not
+silently reuse 0.5 on a 0–1 detection fraction.
 
 ### S2. Hold out the whole block
 

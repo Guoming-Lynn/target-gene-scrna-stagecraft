@@ -108,7 +108,7 @@ class StageHandoffs(unittest.TestCase):
             ledger = pd.read_csv(root/"tables/parent_round_partition_manifest.csv")
             self.assertEqual(len(ledger),4)
             self.assertEqual(ledger.status.value_counts().to_dict(),{"retained":2,"removed":2})
-            with self.assertRaises(FileExistsError):
+            with self.assertRaises(SystemExit):
                 removal_main(args)
 
     def test_inventory_exposes_missing_and_failed_arms(self):

@@ -11,7 +11,7 @@ description: >-
   分室重聚类, 供体关联, 伪批量, limma, LODO, Geneformer, and virtual KO.
 license: MIT
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   scope: "Parts 1–5 main path; Part 6 separately specified Geneformer branch."
 ---
 
@@ -19,6 +19,7 @@ metadata:
 
 New executor: read only the [stage route and project arm checklist](references/start-here.md)
 and the one specification for the selected Part. Do not preload every reference.
+The [reference index](references/README.md) lists the rest.
 Before freezing any analysis, read [research-validity.md](references/research-validity.md).
 This is the authoritative scientific contract for estimands, donor independence,
 source sensitivity, selection, QC/annotation audits and Part 6 inference.
@@ -85,6 +86,11 @@ and anti-patterns: [references/pipeline-map.md](references/pipeline-map.md).
 | **4** | Subtype `TARGET_GENE` survey (descriptive; no DEG) | **written** |
 | **5** | Donor-unit association, enrichment, **source-block LODO in-protocol** | **written** |
 | **6** | Virtual KO of `TARGET_GENE` (pinned Geneformer; embedding shift) | **specified / not turnkey** |
+
+Helper CLIs cover review tables, figure catalogs, Part 5 construction/verdicts,
+and Part 6 audits. Part 1 QC/Harmony/Leiden is executed from the specification
+with Scanpy; `scripts/part1_init.py` only writes the stage scaffold. Part 6
+does not ship model weights.
 
 Spine is 1→2→3→4→5. Parts 6–8 are branches: they may hold or downgrade earlier
 wording; they may not upgrade it. Part 3 is a **loop** (each lineage, or a
@@ -382,8 +388,9 @@ Part 6 progress:
    not shrink when a cell is NA.
 6. **Cannot upgrade Part 5.** Sign test N/N is not source-block replication.
 
-## Later chapters (do not run yet)
+## Parts 7–8 (not in this release)
 
+Parts 7–8 are future claim types. Do not run them from this skill.
 
 ## Validators
 
@@ -394,6 +401,8 @@ confound diagnostics and pathway robustness must still be completed before
 claiming the entire Part 5 stage finished; see its specification.
 
 ```bash
+python scripts/part1_init.py --out analysis/01_qc_global_atlas --gene TARGET_GENE
+python scripts/demo_toy_run.py --out toy_demo_output
 python scripts/check_protocol.py path/to/PROTOCOL.md
 python scripts/check_stage_layout.py path/to/stage_dir
 python scripts/hash_inputs.py path/to/analysis_config.yaml --verify
@@ -439,7 +448,7 @@ python scripts/part5_cell_exploratory.py cells.csv \
     --authorization I_ACCEPT_CELL_LEVEL_FALSE_POSITIVE_RISK \
     --out 02_tables/exploratory/cell_level_result.json
 python scripts/simulation_contract.py --seed 20260906 \
-    --replicates 1000 --out 00_protocol_manifest/simulation_manifest.json
+    --declared-replicates 1000 --out 00_protocol_manifest/simulation_manifest.json
 python scripts/part5_figures.py holdout 02_tables/gene_effects.csv \
     --gene TARGET_GENE --out 03_figures
 python scripts/part6_endpoints.py --sets endpoints.yaml \

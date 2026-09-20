@@ -76,11 +76,9 @@ forecast is not a fitted `NOT_ESTIMABLE` verdict.
 
 ## 13. Donor LOO is not source-block LODO
 
-A slope can have q ~ 1e-18, donor LOO 20/20, and three GEO accessions, and
-still be one study. Consecutive accessions with interleaved donor IDs are
+Same failure mode as §4. Consecutive accessions with interleaved donor IDs are
 one `source_block`. Holding that block out can leave residual df 0. Write
-`SINGLE_SOURCE_DEPENDENT`. The within-block slope may not have moved. What
-died is the sentence "independently replicated".
+`SINGLE_SOURCE_DEPENDENT`. Donor LOO 20/20 does not pay that debt.
 
 ## 14. Folder 08 is not Part 5
 

@@ -6,8 +6,9 @@ Usage:
 """
 from __future__ import annotations
 
-import sys
+import argparse
 from pathlib import Path
+import sys
 
 REQUIRED_DIRS = [
     "00_protocol_manifest",
@@ -17,11 +18,11 @@ REQUIRED_DIRS = [
 ]
 
 
-def main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        print("usage: check_stage_layout.py STAGE_DIR", file=sys.stderr)
-        return 2
-    root = Path(argv[1])
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("stage_dir", type=Path)
+    args = parser.parse_args(argv)
+    root = args.stage_dir
     if not root.is_dir():
         print(f"missing dir: {root}", file=sys.stderr)
         return 1
@@ -41,7 +42,6 @@ def main(argv: list[str]) -> int:
                     failures.append(f"{protocol.name} is not a substantive validated protocol")
     logs = root / "05_logs"
     if logs.is_dir() and not (logs / "verdict.json").exists():
-        # allowed before the run; warn only if reports already exist
         reports = root / "06_reports"
         if reports.is_dir() and any(reports.glob("*.md")):
             failures.append("06_reports exists but 05_logs/verdict.json is missing")
@@ -57,13 +57,12 @@ def main(argv: list[str]) -> int:
         failures.append("reports cannot exist before 05_logs/verdict.json")
     if failures:
         print("FAIL", root)
-        for f in failures:
-            print(" -", f)
+        for item in failures:
+            print(" -", item)
         return 1
     print("OK", root)
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
-
+    raise SystemExit(main())

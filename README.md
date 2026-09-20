@@ -1,6 +1,10 @@
 # target-gene-scrna-stagecraft
 
-[中文说明](README.zh-CN.md) · English
+[中文说明](README.zh-CN.md) · English · v2.1.0
+
+[![CI](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10 | 3.11](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue.svg)](INSTALL.md)
 
 ## What this answers
 
@@ -12,26 +16,61 @@ This is a protocol-driven analysis skill, not a generic Scanpy tutorial: it
 keeps libraries separate during QC, treats `dataset × donor_id` as the unit,
 and forbids cell-level DEG shortcuts.
 
-## Try it first
+## What you can run today
 
-```bash
-python quickstart.py --out quickstart_output
-python scripts/generate_toy_data.py --out toy.h5ad
-```
+| Surface | What exists |
+|---|---|
+| **AI skill** | Full Part 1–6 specification in `SKILL.md` and `references/` |
+| **CLI helpers** | Review tables, figure catalogs, Part 5/6 construction and verdicts |
+| **Not bundled** | A turnkey Part 1 Scanpy runner (QC, Harmony, Leiden). Use `scripts/part1_init.py` plus the Part 1 spec |
+| **Part 6** | Specified and audited; not turnkey. Needs a separate licensed Geneformer environment |
 
-The quickstart runs helper smoke checks only. It does not claim a biological
-result or execute Geneformer.
-
-Start with the [stage route and project arm checklist](references/start-here.md).
+Start with the [stage route](references/start-here.md) and the [reference index](references/README.md).
 
 **Scientific calibration is incomplete.** Passing smoke tests or a `FROZEN_PASS`
 verdict does not establish empirical FDR control, adequate power or independent
-replication. See [calibration, precision and local freeze evidence](references/calibration-and-provenance.md)
-for the executable null harness and its limits.
-
+replication. See [calibration, precision and local freeze evidence](references/calibration-and-provenance.md).
 The 1.9.8 null pilot found elevated BH false discoveries in the repeated-donor
-mode. `joint_common_slope` is consequently exploratory only and cannot pass
-formal gates; see the linked pilot table before using that mode.
+mode. `joint_common_slope` is exploratory only.
+
+## Try it first
+
+Python 3.10 or 3.11:
+
+```bash
+python -m pip install -r requirements.txt
+python quickstart.py --out quickstart_output
+```
+
+Quickstart runs environment checks, a toy helper demo (pseudobulk → source
+blocks → eligibility → manifest-only calibration file), and Part 5/6 helper
+smokes. It does not claim a biological result or execute Geneformer.
+
+Optional clustering extras for Part 1/3 Scanpy execution:
+
+```bash
+python -m pip install -r requirements-part1.txt
+```
+
+## Install
+
+Runtime Python packages: `requirements.txt`.
+Developer checks: `requirements-dev.txt` (`pytest`, `ruff`).
+Part 1/3 clustering libraries: `requirements-part1.txt`.
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+Part 5 additionally needs R with `Matrix`, `limma`, `edgeR`, `fgsea`,
+`statmod`, `jsonlite`, `yaml`, and `digest`. See [INSTALL.md](INSTALL.md)
+and [R packages](references/r-requirements.md).
+
+Interpreter selection, Windows Conda, and Part 6 model paths: [INSTALL.md](INSTALL.md).
+The maintainer baseline is [validated-environment.md](references/validated-environment.md);
+CI also runs Linux and macOS. Copy `environment.example.yaml` into a stage
+manifest and replace placeholders before a formal run.
 
 ## Use it as a skill or CLI
 
@@ -39,71 +78,7 @@ formal gates; see the linked pilot table before using that mode.
 `~/.cursor/skills/`, or the Codex skills directory, then provide the agent a
 named target feature, tissue context, and library manifest.
 
-**As a CLI workflow:** install the dependencies below, then execute the Part
-1–6 commands in `SKILL.md` and the corresponding references.
-
-An agent skill for **one pre-specified gene** in a multi-study single-cell atlas.
-
-You already know the gene. This skill stops the usual shortcuts: concatenating
-libraries before QC, treating Scrublet failure as "all singlets", clustering on
-union-gene zeros, naming Leiden clusters after the gene you care about, and
-calling 100k cells a sample size.
-
-## Scope and status
-
-**Part 1 is written:** per-library QC → strict common-gene merge → Leiden
-resolution grid (human picks) → top-20 markers + per-cluster QC → complete
-naming → locked h5ad → publication figures.
-
-**Part 2 is written:** on that locked atlas, a `TARGET_GENE` figure catalog
-(detection vs intensity vs donor-unit endpoints). No DEG. See
-`references/part2-figures.md`.
-
-**Part 3 is written:** extract a Part 1 lineage, rebuild the manifold from
-counts, DELETE low-quality clusters in rounds with a **new HVG after every
-deletion**, and name subtypes only on the last clean round. See
-`references/part3-compartment-recluster.md` and
-`references/part3-figures.md`.
-
-**Part 4 is written:** the Part 2 `TARGET_GENE` catalog on locked subtypes,
-plus an identifiability forecast for a later donor-unit slope. Still no DEG.
-See `references/part4-subtype-survey.md` and `references/part4-figures.md`.
-
-**Part 5 is written:** donor-unit association on those locked subtypes.
-Target-excluded pseudobulk, limma-voom + edgeR, CAMERA/fgsea, donor LOO
-**and source-block LODO in the same protocol**. `NOT_ESTIMABLE` is a result.
-See `references/part5-donor-association.md` and `references/part5-figures.md`.
-
-**Part 6 is specified and audited, but is not turnkey:** it requires a separate
-pinned Geneformer environment, licensed model weights and model-parity checks.
-It performs virtual knockout/optional OE of
-`TARGET_GENE` on a locked subtype. Embedding-axis shift, donor-equal sign
-tests, KO/OE unpaired when cell sets differ. Not predicted expression.
-See `references/part6-virtual-knockout.md` and
-`references/part6-figures.md`.
-
-## Install and release
-
-Install runtime dependencies first:
-
-```bash
-python -m pip install -r requirements.txt
-python -m pip install -r requirements-dev.txt
-```
-
-Part 5 additionally needs R with `Matrix`, `limma`, `edgeR`, `fgsea`,
-`statmod`, `jsonlite`, `yaml`, and `digest`. Run the R checks listed below
-after installing those packages.
-
-To build a distributable skill archive only after dependencies are installed:
-
-```bash
-python scripts/package_skill.py --out-dir release
-```
-
-Verify the adjacent `.sha256.txt` sidecar before distributing it.
-
-Unzip it so `SKILL.md` is at `target-gene-scrna-stagecraft/SKILL.md`, then copy that folder to:
+Unzip a release so `SKILL.md` is at `target-gene-scrna-stagecraft/SKILL.md`:
 
 | Agent | Path |
 |---|---|
@@ -111,90 +86,71 @@ Unzip it so `SKILL.md` is at `target-gene-scrna-stagecraft/SKILL.md`, then copy 
 | Cursor | `~/.cursor/skills/target-gene-scrna-stagecraft/` or `<repo>/.cursor/skills/` |
 | Claude Code | `~/.claude/skills/target-gene-scrna-stagecraft/` or `<repo>/.claude/skills/` |
 
-Use the repository name and skill name `target-gene-scrna-stagecraft`.
-Do not rename the folder when mounting it for an agent.
+Use the repository name `target-gene-scrna-stagecraft`. Do not rename the folder.
+
+**As a CLI workflow:** init a Part 1 stage, execute the Part 1 spec until labels
+are locked, then run the helper commands in `SKILL.md`.
+
+```bash
+python scripts/part1_init.py --out analysis/01_qc_global_atlas --gene TARGET_GENE
+python scripts/demo_toy_run.py --out toy_demo_output
+```
+
+## Six parts
+
+| Part | Job | Status | Code in this repo |
+|---|---|---|---|
+| **1** | Per-library QC, strict-common merge, Leiden, human labels | written spec | `part1_init.py`, `cluster_review_tables.py` |
+| **2** | Global `TARGET_GENE` survey (no DEG) | written | `part2_figures.py` |
+| **3** | Compartment recluster with new HVG after each DELETE | written | `part3_*` helpers |
+| **4** | Subtype survey + identifiability forecast | written | `part4_figures.py`, `part4_identifiability.py` |
+| **5** | Donor-unit association, LOO, source-block LODO | written | `part5_*` Python + R |
+| **6** | Virtual KO embedding shift | specified / not turnkey | `part6_*` helpers; Geneformer is user-provided |
 
 Ask the agent to open Part 1 with a named `TARGET_GENE` and a GEO/library list.
-After labels are locked, open Part 2 for the gene figure catalog
-(`references/part2-figures.md`). To recluster a lineage, open Part 3
-(`references/part3-compartment-recluster.md`). After subtypes are named, open
-Part 4 (`references/part4-subtype-survey.md`). After identifiability, open
-Part 5 (`references/part5-donor-association.md`). For a virtual knockout of
-the same gene, open Part 6 (`references/part6-virtual-knockout.md`). For the
-full part map, open `references/pipeline-map.md`.
+After labels are locked, open Part 2 (`references/part2-figures.md`). To
+recluster a lineage, open Part 3. After subtypes are named, open Part 4, then
+Part 5. Part 6 is a separate Geneformer branch. Full map:
+[pipeline-map.md](references/pipeline-map.md).
+
+Input layers and objects: [objects-and-layers.md](references/objects-and-layers.md).
+Stage directory contract: [stage-layout.md](references/stage-layout.md).
+Worked anti-patterns: [examples.md](examples.md).
+
+## Validation (helpers, not scientific certification)
+
+The [scientific validity contract](references/research-validity.md) is
+authoritative. Freeze `estimand.mode` before Part 5. `joint_common_slope` cannot
+pass formal gates. New executors should read [glossary.md](references/glossary.md).
+Structural validators do not judge biological correctness.
+
+```bash
+python -m pytest -q tests
+python quickstart.py --out quickstart_output
+Rscript --vanilla tests/audit_boundaries.R
+Rscript --vanilla tests/scientific_regression.R
+```
+
+Those commands match CI. `tests/run_r_integration.py` is a wrapper that runs
+the two R regression files; it is not a syntax linter.
+
+Figure contracts: [figure-contract.md](references/figure-contract.md),
+[figure-statistics-contract.md](references/figure-statistics-contract.md),
+[visual-qa-contract.md](references/visual-qa-contract.md).
+
+The cell-level fallback is `scripts/part5_cell_exploratory.py`. It refuses to
+run without `I_ACCEPT_CELL_LEVEL_FALSE_POSITIVE_RISK` and cannot enter the
+formal verdict. `scripts/simulation_contract.py` writes a **manifest only**;
+it does not run 1,000 calibration replicates.
 
 ## License
 
-MIT.
+MIT. Cite with [CITATION.cff](CITATION.cff).
 
 ## Maintainer
 
 GuomingLin — [GitHub](https://github.com/Guoming-Lynn) ·
 [guoming.lin.med@gmail.com](mailto:guoming.lin.med@gmail.com)
 
-## Dependencies and validation
-
-The package includes [the scientific validity contract](references/research-validity.md)
-and the explicitly authorized cell-level fallback.
-Freeze `estimand.mode` and choose one subtype for `subtype_specific`; use
-`joint_common_slope` explicitly for repeated-subtype common-slope analyses.
-The runner emits actual-design diagnostics and marks unblocked repeated-donor
-edgeR support unavailable. LODO remains internal sensitivity, and Part 6 sign
-p values are marked nominal under shared-axis dependence. QC/label audits and
-full scientific simulation calibration are stage responsibilities described in
-the contract; they are not claimed complete by helper smoke tests.
-
-The cell-level fallback is `scripts/part5_cell_exploratory.py`. It refuses to
-run without `I_ACCEPT_CELL_LEVEL_FALSE_POSITIVE_RISK`, records that acceptance
-in JSON, and cannot enter the formal verdict. Use
-`scripts/simulation_contract.py` to create a frozen calibration manifest for
-null, confounding, collinearity, attrition and failed-holdout scenarios.
-
-Formal figure guidance is centralized in `references/figure-contract.md`,
-`references/figure-statistics-contract.md`, and
-`references/visual-qa-contract.md`. Use
-`scripts/validate_figure_manifest.py` before treating a figure folder as
-publication-ready.
-
-New executors should read `references/glossary.md` first. The structural
-validators intentionally do not judge biological correctness; they now reject
-very short/empty protocols, but a passing validator is not a substitute for
-the required evidence worksheet and human review.
-
-Use a dedicated Python 3.10 or 3.11 environment. CI exercises both versions on
-Linux, macOS, and Windows. Dependency ranges are installation constraints, not
-a guarantee for every combination.
-For interpreter selection and the separate Part 6 environment see INSTALL.md:
-
-The validated project baseline is recorded in `environment.example.yaml`.
-Copy it to a stage manifest and replace every placeholder with exact values;
-formal runs must archive Python package resolution, R `sessionInfo()`, and the
-exact model/checkpoint hashes without including biological identifiers.
-
-```bash
-python scripts/_part5_smoke.py
-python scripts/_part6_smoke.py
-python -m unittest discover -s tests -p "test_*.py"
-python -m pytest -q tests
-Rscript tests/scientific_regression.R
-```
-
-Part 5 needs R with `Matrix`, `limma`, `edgeR`, `statmod`, `jsonlite`,
-`yaml`, `digest`, and `fgsea` (Bioconductor for limma/edgeR/fgsea).
-Install packages in the project's R environment and record `sessionInfo()`.
-Part 6 additionally needs the official Geneformer revision, matching PyTorch,
-Transformers, model weights and dictionaries frozen in its protocol. The
-helper smoke tests do not execute Geneformer or validate a GPU/checkpoint.
-
-Run the legacy R syntax check with (the actual synthetic integration check is
-`Rscript tests/scientific_regression.R` above):
-
-```bash
-python tests/run_r_integration.py --rscript /path/to/Rscript
-```
-
-The current release physically excludes the target from pseudobulk outcomes, aligns
-source metadata by unit ID, computes donor LOO and source-block LODO, derives
-gene evidence/audit flags from model outputs, and rejects incomplete smoke
-metrics and mismatched GMT hashes. See the Part 5 specification for the
-remaining pathway robustness and project-specific diagnostic handoff.
+[CHANGELOG](CHANGELOG.md) · [CONTRIBUTING](CONTRIBUTING.md) ·
+[SECURITY](SECURITY.md) · [CODE OF CONDUCT](CODE_OF_CONDUCT.md)

@@ -17,6 +17,12 @@ __pycache__/
 *.npz
 *.safetensors
 pytorch_model*.bin
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
 quickstart_output/
+toy_demo_output/
 data/
 outputs/

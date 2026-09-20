@@ -20,6 +20,13 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.io import CSV_EXCEL
 
 import numpy as np
 import pandas as pd
@@ -207,21 +214,21 @@ def main() -> int:
 
     mark = markers(adata, args.leiden_key, args.n_genes)
     mark.insert(0, "leiden_key", args.leiden_key)
-    mark.to_csv(out / f"{args.leiden_key}_top50.csv", index=False, encoding="utf-8-sig")
+    mark.to_csv(out / f"{args.leiden_key}_top50.csv", index=False, encoding=CSV_EXCEL)
     display = mark.copy()
     if args.strict_positive:
         display = strict_positive(display)
         display.to_csv(
             out / f"{args.leiden_key}_top50_strict_positive.csv",
             index=False,
-            encoding="utf-8-sig",
+            encoding=CSV_EXCEL,
         )
     exclude = {g.strip().upper() for g in args.exclude_genes.split(",") if g.strip()}
     if exclude:
         display = display.loc[~display["gene"].astype(str).str.upper().isin(exclude)]
         display["rank"] = display.groupby("cluster", observed=True).cumcount() + 1
     top20 = display.loc[display["rank"] <= 20].copy()
-    top20.to_csv(out / f"{args.leiden_key}_top20.csv", index=False, encoding="utf-8-sig")
+    top20.to_csv(out / f"{args.leiden_key}_top20.csv", index=False, encoding=CSV_EXCEL)
 
     sizes = (
         adata.obs[args.leiden_key]
@@ -244,11 +251,11 @@ def main() -> int:
     compact[["cluster", "n_cells", "top20_markers", "proposed_label"]].to_csv(
         out / f"{args.leiden_key}_top20_by_cluster.csv",
         index=False,
-        encoding="utf-8-sig",
+        encoding=CSV_EXCEL,
     )
 
     qc = cluster_qc(adata, args.leiden_key, top20, lineage, target)
-    qc.to_csv(out / f"{args.leiden_key}_cluster_qc.csv", index=False, encoding="utf-8-sig")
+    qc.to_csv(out / f"{args.leiden_key}_cluster_qc.csv", index=False, encoding=CSV_EXCEL)
 
     lines = [
         f"# Marker annotation worksheet: {args.leiden_key}",

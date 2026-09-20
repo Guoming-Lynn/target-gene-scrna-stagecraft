@@ -14,34 +14,30 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    yaml = None
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
+from stagecraft.io import CSV_EXCEL, load_yaml, require_new, require_yaml
+from stagecraft.numeric import nonpositive
 
 GSE_RE = re.compile(r"GSE(\d+)", re.I)
 DONOR_NUM_RE = re.compile(r"(\d+)$")
 
 
-def _require_new(path: Path) -> None:
-    if path.exists():
-        raise SystemExit(f"Refusing to overwrite: {path}")
-
-
 def load_map(path: Path | None) -> dict[str, str]:
     if path is None:
         return {}
-    if yaml is None:
-        raise SystemExit("PyYAML required: pip install pyyaml")
+    require_yaml()
     if not path.is_file():
         raise SystemExit(f"missing source_block map: {path}")
-    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    raw = load_yaml(path) or {}
     if not isinstance(raw, dict):
         raise SystemExit("source_block map must be dataset → block")
     if any(not isinstance(v, str) or not v.strip() for v in raw.values()):
@@ -101,7 +97,7 @@ def between_within_fraction(values: np.ndarray, groups: np.ndarray) -> dict[str,
     y = frame["y"].to_numpy(float)
     grand = float(np.mean(y))
     ss_total = float(np.sum((y - grand) ** 2))
-    if ss_total == 0:
+    if nonpositive(ss_total):
         return {"between_fraction": float("nan"), "within_fraction": float("nan")}
     ss_between = 0.0
     for _, sub in frame.groupby("g"):
@@ -241,19 +237,19 @@ def main(argv: list[str] | None = None) -> int:
         "source_block_suggestions.csv": suggestions,
     }.items():
         path = args.out / name
-        _require_new(path)
-        table.to_csv(path, index=False, encoding="utf-8-sig")
+        require_new(path)
+        table.to_csv(path, index=False, encoding=CSV_EXCEL)
 
     annotated_path = args.out / "metadata_with_source_block.csv"
-    _require_new(annotated_path)
-    work.to_csv(annotated_path, index=False, encoding="utf-8-sig")
+    require_new(annotated_path)
+    work.to_csv(annotated_path, index=False, encoding=CSV_EXCEL)
 
     loo_audit = {}
     if args.loo is not None:
         loo = relabel_loo(pd.read_csv(args.loo), work, args.dataset_key)
         loo_path = args.out / "loo_with_source.csv"
-        _require_new(loo_path)
-        loo.to_csv(loo_path, index=False, encoding="utf-8-sig")
+        require_new(loo_path)
+        loo.to_csv(loo_path, index=False, encoding=CSV_EXCEL)
         loo_audit = loo_unbalanced(loo)
 
     audit = {
@@ -272,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
         audit_path = logs / "exposure_variance.json"
     else:
         audit_path = args.out / "exposure_variance.json"
-    _require_new(audit_path)
+    require_new(audit_path)
     audit_path.write_text(json.dumps(audit, indent=2), encoding="utf-8")
     print(f"source blocks: {audit['n_source_blocks']} from {audit['n_datasets']} datasets")
     if not suggestions.empty:

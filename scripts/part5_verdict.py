@@ -12,18 +12,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    yaml = None
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
-
-def _require_new(path: Path) -> None:
-    if path.exists():
-        raise SystemExit(f"Refusing to overwrite: {path}")
+from stagecraft.io import load_yaml_rows, require_new
 
 
 def _as_bool(value: Any) -> bool:
@@ -44,13 +41,7 @@ def load_audit(path: Path) -> dict[str, Any]:
 
 
 def load_table(path: Path) -> list[dict[str, Any]]:
-    if yaml is None:
-        raise SystemExit("PyYAML required: pip install pyyaml")
-    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    rows = raw.get("rows", raw) if isinstance(raw, dict) else raw
-    if not isinstance(rows, list) or not rows:
-        raise SystemExit("verdict table needs a non-empty 'rows' list")
-    return rows
+    return load_yaml_rows(path)
 
 
 def matches(when: Mapping[str, Any] | None, audit: Mapping[str, Any]) -> bool:
@@ -158,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
 
     verdict = guarded_verdict(load_table(args.table), load_audit(args.audit))
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    _require_new(args.out)
+    require_new(args.out)
     args.out.write_text(json.dumps(verdict, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"verdict={verdict['verdict']} row={verdict['matched_row']}")
     print("First matching row won. Do not paraphrase the token into a stronger claim.")

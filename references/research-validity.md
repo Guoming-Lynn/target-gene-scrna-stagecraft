@@ -1,4 +1,4 @@
-# Research validity contract (1.9.3)
+# Research validity contract (2.1.0)
 
 Read before freezing Parts 1, 3, 5, or 6. This contract supersedes older
 statements implying that a passing LODO establishes independent replication.

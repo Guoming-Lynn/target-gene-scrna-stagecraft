@@ -14,15 +14,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
-def _require_new(path: Path) -> None:
-    if path.exists():
-        raise SystemExit(f"Refusing to overwrite: {path}")
+from stagecraft.io import CSV_EXCEL, exit_reason, require_new
 
 
 def _split(raw: str) -> list[str]:
@@ -150,7 +152,7 @@ def evaluate(
                     "arm": arm,
                     "n_units": int(len(sub)),
                     "status": "NOT_ESTIMABLE",
-                    "reason": str(exc),
+                    "reason": exit_reason(exc),
                 }
             )
             continue
@@ -251,8 +253,8 @@ def main(argv: list[str] | None = None) -> int:
         part4=part4,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    _require_new(args.out)
-    table.to_csv(args.out, index=False, encoding="utf-8-sig")
+    require_new(args.out)
+    table.to_csv(args.out, index=False, encoding=CSV_EXCEL)
     audit = {
         "n_arms": int(len(table)),
         "n_formal": int((table["status"] == "formal").sum()),
@@ -260,7 +262,7 @@ def main(argv: list[str] | None = None) -> int:
         "n_not_estimable": int((table["status"] == "NOT_ESTIMABLE").sum()),
     }
     audit_path = args.out.with_suffix(".audit.json")
-    _require_new(audit_path)
+    require_new(audit_path)
     audit_path.write_text(json.dumps(audit, indent=2), encoding="utf-8")
     print(f"wrote eligibility ({len(table)} arms): {args.out}")
     print(

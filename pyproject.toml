@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "target-gene-scrna-stagecraft"
+version = "2.1.0"
+description = "Protocol-driven multi-study scRNA-seq workflow for one pre-specified gene."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10,<3.12"
+authors = [{ name = "GuomingLin", email = "guoming.lin.med@gmail.com" }]
+keywords = ["single-cell", "scRNA-seq", "pseudobulk", "limma"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+  "numpy>=1.24,<3",
+  "pandas>=2.0,<3",
+  "scipy>=1.10,<2",
+  "PyYAML>=6,<7",
+  "anndata>=0.9,<0.13",
+  "scanpy>=1.9,<1.12",
+  "matplotlib>=3.7,<4",
+  "seaborn>=0.12,<1",
+]
+
+[project.optional-dependencies]
+part1 = [
+  "scrublet>=0.2,<1",
+  "harmonypy>=0.0.10,<1",
+  "igraph>=0.10,<1",
+  "leidenalg>=0.9,<1",
+]
+dev = [
+  "pytest>=8,<9",
+  "ruff==0.16.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft"
+Issues = "https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/issues"
+
+[tool.setuptools.packages.find]
+include = ["stagecraft*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"

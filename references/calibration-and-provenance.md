@@ -32,8 +32,9 @@ A small simulation elsewhere cannot change these fields for a new analysis.
 
 ## Executable null experiment
 
-The manifest-only helper remains a planning tool. To actually execute the
-pseudobulk gene engine, including all donor LOO and source LODO fits:
+The manifest-only helper (`scripts/simulation_contract.py`) writes a planning
+file. `--declared-replicates` does **not** run any draws. To actually execute
+the pseudobulk gene engine, including all donor LOO and source LODO fits:
 
 ```bash
 Rscript --vanilla scripts/calibrate_part5_null.R null_single 1000 271828 subtype_specific 18 3 1000

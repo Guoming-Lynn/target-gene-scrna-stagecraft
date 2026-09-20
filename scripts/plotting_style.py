@@ -7,9 +7,9 @@ Part 6 virtual-knockout Δaxis panels.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import platform
+import sys
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -21,12 +21,15 @@ import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
-from validate_figure_manifest import validate_manifest
+SCRIPT_DIR = Path(__file__).resolve().parent
+_ROOT = SCRIPT_DIR.parent
+for _path in (str(_ROOT), str(SCRIPT_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    yaml = None
+from validate_figure_manifest import validate_manifest  # noqa: E402
+from stagecraft.hashing import sha256_file  # noqa: E402
+from stagecraft.io import load_yaml  # noqa: E402
 
 PathLike = str | Path
 
@@ -37,10 +40,7 @@ def load_plotting_config(path: PathLike | None = None) -> dict[str, Any]:
     cfg_path = Path(path or DEFAULT_CONFIG).resolve()
     if not cfg_path.is_file():
         raise FileNotFoundError(f"Plotting configuration not found: {cfg_path}")
-    if yaml is None:
-        raise SystemExit("PyYAML required: pip install pyyaml")
-    with cfg_path.open("r", encoding="utf-8") as handle:
-        config = yaml.safe_load(handle)
+    config = load_yaml(cfg_path)
     required = {"fonts", "figure_sizes_inches", "output", "theme", "umap"}
     missing = required.difference(config or {})
     if missing:
@@ -51,10 +51,7 @@ def load_plotting_config(path: PathLike | None = None) -> dict[str, Any]:
 def load_color_map(path: PathLike) -> dict[str, str]:
     """Accept `{cell_type: {name: hex}}` or a flat `{name: hex}` YAML."""
     color_path = Path(path).resolve()
-    if yaml is None:
-        raise SystemExit("PyYAML required: pip install pyyaml")
-    with color_path.open("r", encoding="utf-8") as handle:
-        raw = yaml.safe_load(handle)
+    raw = load_yaml(color_path)
     if not isinstance(raw, dict):
         raise ValueError("Color YAML must be a mapping.")
     if "cell_type" in raw and isinstance(raw["cell_type"], dict):
@@ -154,11 +151,7 @@ def _json_safe(value: Any) -> Any:
 
 @lru_cache(maxsize=64)
 def file_sha256(path: PathLike, block_size: int = 2**20) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        while block := handle.read(block_size):
-            digest.update(block)
-    return digest.hexdigest()
+    return sha256_file(path, block_size=block_size)
 
 
 def save_figure(

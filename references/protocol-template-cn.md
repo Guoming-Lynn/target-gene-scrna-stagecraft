@@ -4,10 +4,15 @@
 
 协议版本：`x.y.z`
 冻结日期：YYYY-MM-DD
+Part: `1_qc_global_atlas` | `2_target_gene_survey` | `3_compartment_recluster` | `4_subtype_survey` | `5_donor_association` | `6_virtual_knockout` | (later parts)
+`TARGET_GENE`：SYMBOL（物种：…）。预先指定，不是发现目标。
 证据上限：`descriptive` | `formal` | `exploratory` | `orthogonal_external` | `geometry_only`
 `can_only_downgrade`：true | false
 执行者：低成本模型。**本文件是唯一权威规格。** 与本文件冲突时停下报告，不得自行改设计。
 
+Part 1 按 [part1-qc-and-global-atlas.md](part1-qc-and-global-atlas.md)，停在人工锁定的全局标签。
+Part 3 按 [part3-compartment-recluster.md](part3-compartment-recluster.md)。STOP POINT 是人工门禁；DELETE 未清零前不得命名。
+Part 4 按 [part4-subtype-survey.md](part4-subtype-survey.md)。复用 Part 2 目录，不拟合斜率。
 Part 5 按 [part5-donor-association.md](part5-donor-association.md)。来源块 LODO 写在本协议内。`NOT_ESTIMABLE` 就是结果。
 
 建模前冻结估计对象（`subtype_specific` 或 `joint_common_slope`）、同一供体

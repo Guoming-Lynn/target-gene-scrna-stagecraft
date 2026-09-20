@@ -16,7 +16,7 @@ args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1L) stop("usage: Rscript part5_run_pathways.R analysis_config.yaml")
 cfg_path <- normalizePath(args[[1]], winslash = "/", mustWork = TRUE)
 cfg <- yaml.load_file(cfg_path)
-if (!is.null(cfg$random_seed)) set.seed(cfg$random_seed)
+if (!is.null(cfg$random_seed)) set.seed(cfg$random_seed) else set.seed(42L)
 stage_root <- dirname(dirname(cfg_path))
 resolve <- function(p) {
   if (is.null(p) || !nzchar(p)) return(NULL)

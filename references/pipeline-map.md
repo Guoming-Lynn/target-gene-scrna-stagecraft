@@ -1,11 +1,11 @@
 # Pipeline map — parts vs numbered folders
 
-This skill is a **pattern language**, not a replica of one project's 32 folders.
+This skill is a **pattern language**, not a replica of one project's folder tree.
 
 A real program accumulates false starts, stopped lines, draft siblings, and
 audits that arrived too late. The parts below are the order you would run **if
-you already knew those lessons**. Folder numbers in `Your folders` are the
-origin of each pattern. They are not a required directory scheme.
+you already knew those lessons**. Do not copy internal numbered folders from
+another analysis.
 
 `TARGET_GENE` is the pre-specified gene. Never name a cluster after it.
 
@@ -35,16 +35,16 @@ origin of each pattern. They are not a required directory scheme.
 Parts 7–8 below are historical/future claim types only; they are not
 implemented or included in the public workflow.
 
-| Part | Job | Your folders (origin) | Status |
-|---|---|---|---|
-| **1** | Per-library QC, strict common-gene merge, global Leiden, human labels, locked atlas | `01` QC + `02` global clustering | **written** |
-| **2** | Global `TARGET_GENE` survey (detection / intensity / donor-unit description). No DEG. | `03` | **written** |
-| **3** | Compartment subset → independent manifold from counts → contamination rounds → human-locked subtypes | `04`+`06`+`07` LINEAGE_A; `09` T/NK; `12`+`12_diag` EC; `15` myeloid; `28` second-tissue merge | **written** |
-| **4** | Same survey as Part 2, now on **locked subtypes**. Still no DEG. | `10` T/NK; `13` EC; `16` myeloid | **written** |
-| **5** | Donor-unit association, enrichment, confound diagnostics, **mandatory source-block LODO** | `11` v2; `14`; `17`; internals of `29`; **`31` as a gate, not a sequel** | **written** |
-| **6** | Virtual KO / optional OE of `TARGET_GENE` on a locked subtype (embedding shift) | `19`; `21` | **written** |
-| **7** | Estimands that are **not** the `TARGET_GENE` story (identity, clinical grouping) | `24`; `25`; `27` | later |
-| **8** | Named orthogonal claims: trajectory, CellChat, STRING, frozen module, second exposure scale, orthogonal bulk | `18`; `20` `22` `23` `26` `30` `31a` `32`; `14` mito / `29-11` module | later |
+| Part | Job | Status |
+|---|---|---|
+| **1** | Per-library QC, strict common-gene merge, global Leiden, human labels, locked atlas | **written spec; no bundled Scanpy runner** |
+| **2** | Global `TARGET_GENE` survey (detection / intensity / donor-unit description). No DEG. | **written** |
+| **3** | Compartment subset → independent manifold from counts → contamination rounds → human-locked subtypes | **written** |
+| **4** | Same survey as Part 2, now on **locked subtypes**. Still no DEG. | **written** |
+| **5** | Donor-unit association, enrichment, confound diagnostics, **mandatory source-block LODO** | **written** |
+| **6** | Virtual KO / optional OE of `TARGET_GENE` on a locked subtype (embedding shift) | **specified / not turnkey** |
+| **7** | Estimands that are **not** the `TARGET_GENE` story (identity, clinical grouping) | later |
+| **8** | Named orthogonal claims: trajectory, CellChat, STRING, frozen module, second exposure scale, orthogonal bulk | later |
 
 Cross-cutting rules (protocol, `n`, layers, verdicts, forbidden sentences)
 stay in `SKILL.md`. They are not a ninth part.

@@ -93,6 +93,10 @@ Starting freeze for the forecast (amend in the protocol):
 | log2(CPM+1) sd | ≥ 0.15 | same | (with detection) |
 | Datasets / source_blocks | ≥ 2 | 1 with range → `WITHIN_SOURCE_RANGE` | — |
 
+These detection and log2(CPM+1) floors are Part 4 forecast gates. Part 5
+eligibility uses 0.5 on `jeffreys_per_10pct` unless the protocol amends it.
+See [source-dependence.md](source-dependence.md).
+
 First matching flag wins, in this order:
 
 ```text

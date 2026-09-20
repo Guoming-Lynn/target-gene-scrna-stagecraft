@@ -17,14 +17,21 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.hashing import sha256_file
+from stagecraft.io import CSV_EXCEL, require_new
 
 try:
     import anndata as ad
@@ -38,18 +45,7 @@ DROP_OBS_PREFIXES = ("leiden",)
 
 
 def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while block := handle.read(2**20):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def _require_new(path: Path) -> Path:
-    if path.exists():
-        raise FileExistsError(f"Refusing to overwrite existing artifact: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path
+    return sha256_file(path)
 
 
 def normalize_decision(value: object) -> str:
@@ -224,8 +220,8 @@ def main(argv: list[str] | None = None) -> int:
 
     clean_analysis_state(retained)
 
-    removed_path = _require_new(args.removed_out)
-    child_path = _require_new(args.child_raw)
+    removed_path = require_new(args.removed_out)
+    child_path = require_new(args.child_raw)
     tables = args.tables_out
     tables.mkdir(parents=True, exist_ok=True)
 
@@ -278,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     decision_json = tables / "parent_removal_decision.json"
     if decision_json.exists():
-        raise FileExistsError(f"Refusing to overwrite: {decision_json}")
+        raise SystemExit(f"Refusing to overwrite: {decision_json}")
     decision_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     ids = "_".join(sorted(delete_ids, key=lambda x: int(x) if x.isdigit() else x))
@@ -291,8 +287,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _write_new(frame: pd.DataFrame, path: Path) -> None:
-    _require_new(path)
-    frame.to_csv(path, index=False, encoding="utf-8-sig")
+    require_new(path)
+    frame.to_csv(path, index=False, encoding=CSV_EXCEL)
 
 
 def _infer_child_name(child_raw: Path) -> str:

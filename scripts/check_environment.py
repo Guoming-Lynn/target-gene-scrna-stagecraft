@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+# part1/part3 clustering extras are in requirements-part1.txt, not the base install.
 PROFILES = {
     'smoke': ['numpy', 'pandas', 'scipy', 'anndata', 'yaml'],
     'part1': ['numpy', 'pandas', 'anndata', 'scanpy', 'scrublet', 'harmonypy', 'igraph', 'leidenalg'],

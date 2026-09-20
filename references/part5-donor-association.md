@@ -228,9 +228,14 @@ Tiers: `SAME_STUDY_LIKELY` | `SAME_STUDY_CONFIRMED` | `UNRESOLVED`. The
 holdout design does not change with the tier.
 
 Also write exposure mean/sd/IQR per dataset and per `source_block`. Flag
-`NO_EXPOSURE_RANGE` when sd is below the protocol floor (starting freeze:
-0.02 on Jeffreys fraction, 0.15 on log2CPM; or 0.5 on
-`jeffreys_per_10pct`).
+`NO_EXPOSURE_RANGE` when sd is below the protocol floor. Canonical starting
+freezes, also listed in [source-dependence.md](source-dependence.md):
+
+| Scale | Floor | Gate |
+|---|---|---|
+| detection fraction | 0.02 | Part 4 forecast |
+| log2(CPM+1) | 0.15 | Part 4 forecast and Part 5 alternative exposure |
+| `jeffreys_per_10pct` | 0.5 | Part 5 eligibility `--sd-floor` and source-block `--min-sd` |
 
 Between-dataset variance share of the exposure is a **confound diagnostic**,
 not a replication test. A small share plus `dataset` already in the design

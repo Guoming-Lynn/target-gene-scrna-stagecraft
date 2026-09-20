@@ -15,7 +15,7 @@ def main():
     args.out.mkdir(parents=True, exist_ok=False)
     commands = [
         ('environment', ['scripts/check_environment.py', '--stage', 'smoke']),
-        ('toy', ['scripts/generate_toy_data.py', '--out', str(args.out.resolve() / 'toy.h5ad')]),
+        ('toy_demo', ['scripts/demo_toy_run.py', '--out', str(args.out.resolve() / 'toy_demo')]),
         ('part5_helpers', ['scripts/_part5_smoke.py']),
         ('part6_helpers', ['scripts/_part6_smoke.py']),
     ]

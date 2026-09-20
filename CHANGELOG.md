@@ -1,12 +1,35 @@
+# Changelog
 
-## 2.0.0
+All notable changes to this project are documented here.
+
+## [2.1.0] - 2026-09-20
+
+### Added
+- Installable `stagecraft` helper package, `pyproject.toml`, and `CITATION.cff`.
+- `scripts/part1_init.py` stage scaffold and `scripts/demo_toy_run.py` helper path that consumes toy data.
+- `requirements-part1.txt` for clustering extras not imported by helper CLIs.
+
+### Changed
+- README, Chinese README, INSTALL, and SKILL now state which parts have CLIs versus specification-only execution.
+- Quickstart runs the toy helper demo instead of writing an unused h5ad.
+- `simulation_contract.py` labels itself `MANIFEST_ONLY` and documents that `--replicates` does not fit models.
+- Overwrite refusal, SHA-256, YAML loading, and Excel CSV encoding share one helper module.
+- Part 6 status is `specified / not turnkey` in the pipeline map.
+
+### Fixed
+- Pathway runner now defaults `set.seed` to 42 when the config omits `random_seed`.
+- `check_stage_layout.py` uses argparse.
+- Install and test recipes now match CI (`pytest`).
+- Chinese protocol template routes Parts 1, 3, and 4.
+
+## [2.0.0]
 - Open-source release; scientific calibration remains incomplete.
 - Consolidates the 1.9.11 data-construction tests, cross-platform checks,
   and explicit scientific evidence limits.
 - Repair the Part 6 smoke fixture to include required cell identities and
   run the documented quickstart in CI, including both helper smoke suites.
 
-## 1.9.11
+## [1.9.11]
 - Added focused hash/protocol, review worksheet and rendered plot regressions.
 - Hash scanning recognizes bare filenames under inputs/paths and fails when
   no paths are found; protocol section checks now require actual headings.
@@ -17,7 +40,7 @@
 - Plot-only h5ad reads use AnnData; Scanpy marker ranking remains unchanged.
 - Statistical engines and scientific evidence ceilings are unchanged.
 
-## 1.9.10
+## [1.9.10]
 - Added hand-calculated data construction tests for pseudobulk counts and
   exposure sidecars, source mapping, LODO geometry, endpoint coverage,
   token classification and cell-to-donor eligibility, including actual file I/O.
@@ -31,7 +54,7 @@
   each donor/target/perturbation/population/endpoint; empty eligible output retains headers.
 - These are numerical regression tests, not whole-pipeline scientific calibration.
 
-## 1.9.9
+## [1.9.9]
 - Added a short stage route and a project arm inventory retaining missing and
   failed results; within-arm verdicts do not claim project multiplicity control.
 - Explicitly separate whole-pipeline calibration and perturbation biological
@@ -42,7 +65,7 @@
   parses eligibility explicitly and retains zero-eligible subtype slots.
 - Added targeted stage handoff and project inventory regressions.
 
-## 1.9.8
+## [1.9.8]
 - Restricted joint_common_slope to exploratory evidence after a 100-draw null
   pilot per mode showed a repeated-donor BH false-discovery warning signal.
 - Added an executable pseudobulk global-null harness using the real Part 5
@@ -56,11 +79,11 @@
 - Fixed Part 6 figure CLI argument parsing; pinned correctness lint configuration.
 - Normalized Markdown line endings and added .gitattributes.
 
-## 1.9.7
+## [1.9.7]
 - Added stage dependency gates, donor/block audit boundaries and exploratory
   embedding claim ceilings. Helper smoke tests are not scientific calibration.
 
-## 1.9.6
+## [1.9.6]
 - Fixed Part 6 paired/unpaired CLI to use a mutually exclusive group.
 - Unmapped source-block datasets now fail fast before LODO.
 - Clarified that the supported scope is Parts 1–6.

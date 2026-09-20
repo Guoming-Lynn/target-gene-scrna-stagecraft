@@ -15,6 +15,7 @@ return to their producing stage, not substitute a cell-level test.
 | Other estimands or mechanistic extensions | Separate protocol | Parts 7/8 are not implemented here |
 
 For a new executor, first run `python quickstart.py --out new_smoke_output`.
+The [reference index](README.md) lists specs, figure contracts and runtime docs.
 Before the chosen stage run `python scripts/check_environment.py --stage partN`.
 Smoke success proves neither a working Geneformer model nor scientific validity.
 For a Part 4 forecast, provide exactly one biological donor row per subtype;
