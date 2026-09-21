@@ -5,6 +5,22 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    ignore:
+      # Geneformer stack is pinned in references/part6-requirements.txt.
+      - dependency-name: transformers
+      - dependency-name: datasets
+      - dependency-name: torch
+      - dependency-name: huggingface-hub
+      # Clustering extras are not imported by helper CLIs; major range
+      # expansions are out of CI coverage.
+      - dependency-name: igraph
+        update-types: ["version-update:semver-major"]
+      - dependency-name: harmonypy
+        update-types: ["version-update:semver-major"]
+      - dependency-name: leidenalg
+        update-types: ["version-update:semver-major"]
+      - dependency-name: scrublet
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

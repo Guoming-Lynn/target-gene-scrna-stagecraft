@@ -31,8 +31,19 @@ class ReviewBoundaries(unittest.TestCase):
 
     def test_figure_cli_parses_arguments(self):
         script = Path(__file__).resolve().parents[1] / "scripts" / "part6_figures.py"
-        result = subprocess.run([sys.executable, str(script), "--help"],
-                                capture_output=True, text=True, timeout=60, check=False)
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "cp1252"
+        env.pop("PYTHONUTF8", None)
+        result = subprocess.run(
+            [sys.executable, str(script), "--help"],
+            capture_output=True,
+            text=True,
+            encoding="cp1252",
+            errors="strict",
+            env=env,
+            timeout=60,
+            check=False,
+        )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("forest", result.stdout)
 

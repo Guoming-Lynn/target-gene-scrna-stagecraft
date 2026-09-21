@@ -1,6 +1,7 @@
 # Explicit reviewed release files. No globs; never add runtime data or secrets.
 .gitattributes
 .github/ISSUE_TEMPLATE/bug_report.md
+.github/ISSUE_TEMPLATE/config.yml
 .github/ISSUE_TEMPLATE/feature_request.md
 .github/PULL_REQUEST_TEMPLATE.md
 .github/dependabot.yml

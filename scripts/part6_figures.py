@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Part 6 virtual-KO figures. Donor medians of Δaxis, not cells.
+"""Part 6 virtual-KO figures. Donor medians of delta-axis, not cells.
 
 Usage:
     python scripts/part6_figures.py observability token_audit.csv --out 03_figures

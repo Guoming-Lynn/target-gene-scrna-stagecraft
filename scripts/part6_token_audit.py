@@ -123,10 +123,10 @@ def main(argv: list[str] | None = None) -> int:
     stats = summary(table)
     print(stats)
     if stats["n_illegal"]:
-        print("ILLEGAL token mismatch — chapter STOPPED")
+        print("ILLEGAL token mismatch - chapter STOPPED")
         return 2
     if stats["n_ko_eligible"] == 0:
-        print("TOKEN_UNOBSERVABLE — no KO-eligible cell")
+        print("TOKEN_UNOBSERVABLE - no KO-eligible cell")
         return 3
     return 0
 

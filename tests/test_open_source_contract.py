@@ -1,3 +1,4 @@
+import ast
 import json
 import sys
 import tempfile
@@ -24,6 +25,20 @@ class OpenSourceContract(unittest.TestCase):
         self.assertIn(f'version = "{stagecraft.__version__}"', pyproject)
         citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
         self.assertIn(f"version: {stagecraft.__version__}", citation)
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn(f"v{stagecraft.__version__}", readme)
+
+    def test_argparse_module_docs_encode_on_windows_console(self):
+        paths = sorted((ROOT / "scripts").glob("*.py")) + [ROOT / "quickstart.py"]
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            if "description=__doc__" not in text:
+                continue
+            doc = ast.get_docstring(ast.parse(text)) or ""
+            try:
+                doc.encode("cp1252")
+            except UnicodeEncodeError as exc:
+                self.fail(f"{path.name} argparse description is not cp1252-safe: {exc}")
 
     def test_simulation_contract_is_manifest_only(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Match ≤10 negative-control genes to TARGET_GENE on raw detection + mean.
+"""Match at most 10 negative-control genes to TARGET_GENE on raw detection + mean.
 
 Controls are descriptive comparators. They are not a permutation null.
 One window expansion is allowed. A second expansion is not.

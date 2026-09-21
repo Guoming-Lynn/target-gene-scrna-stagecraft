@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Leave-one-donor-out embedding axes and Δaxis.
+"""Leave-one-donor-out embedding axes and delta-axis.
 
 The held-out donor must not enter its own reference axis. Perturbed CLS
 must not enter axis construction.

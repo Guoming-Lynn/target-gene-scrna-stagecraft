@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## [2.1.1] - 2026-09-21
+
+### Fixed
+- Windows CI: Part 6 CLI `--help` no longer prints characters that a cp1252
+  console cannot encode.
+- Status prints from Part 5/6 helpers use ASCII hyphens instead of em dashes.
+
+### Changed
+- GitHub Actions use `actions/checkout@v7` and `actions/setup-python@v7`.
+- pytest is allowed through 9.x (`>=8,<10`).
+- Dependabot ignores Geneformer-pinned packages and major clustering extras.
+
 ## [2.1.0] - 2026-09-20
 
 ### Added

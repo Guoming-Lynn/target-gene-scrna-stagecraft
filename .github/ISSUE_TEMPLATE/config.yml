@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: mailto:guoming.lin.med@gmail.com
+    about: Do not open a public issue for a suspected vulnerability or leaked credential.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Donor eligibility BEFORE across-donor summaries.
 
-KO ≥5 token-present successes; OE ≥10 tokenized successes.
+KO >=5 token-present successes; OE >=10 tokenized successes.
 Ineligible donors stay in the ledger and do not enter medians or tests.
 
 Usage:

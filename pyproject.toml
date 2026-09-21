@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "target-gene-scrna-stagecraft"
-version = "2.1.0"
+version = "2.1.1"
 description = "Protocol-driven multi-study scRNA-seq workflow for one pre-specified gene."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -36,7 +36,7 @@ part1 = [
   "leidenalg>=0.9,<1",
 ]
 dev = [
-  "pytest>=8,<9",
+  "pytest>=8,<10",
   "ruff==0.16.6",
 ]
 

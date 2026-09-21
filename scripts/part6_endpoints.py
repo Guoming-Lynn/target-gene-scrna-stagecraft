@@ -152,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
             long_rows.append({"endpoint": row.endpoint, "role": row.role, "gene": gene})
     pd.DataFrame(long_rows).to_csv(members_out, index=False)
     if primary_blocked(table):
-        print("PRIMARY COVERAGE FAILED — chapter STOPPED")
+        print("PRIMARY COVERAGE FAILED - chapter STOPPED")
         return 2
     print(f"wrote {args.out}")
     return 0

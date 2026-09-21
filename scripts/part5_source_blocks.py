@@ -272,7 +272,7 @@ def main(argv: list[str] | None = None) -> int:
     audit_path.write_text(json.dumps(audit, indent=2), encoding="utf-8")
     print(f"source blocks: {audit['n_source_blocks']} from {audit['n_datasets']} datasets")
     if not suggestions.empty:
-        print(f"sibling suggestions: {len(suggestions)} pair(s) — protocol must freeze the merge")
+        print(f"sibling suggestions: {len(suggestions)} pair(s) - protocol must freeze the merge")
     return 0
 
 

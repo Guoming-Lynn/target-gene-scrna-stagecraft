@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 
 # CLI exit codes. 0 success; 1 usage/validation; 2 gate/environment failure;
 # 3 scientific non-estimability or empty KO-eligible set.
