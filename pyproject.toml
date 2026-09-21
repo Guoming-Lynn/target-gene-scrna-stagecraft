@@ -37,7 +37,7 @@ part1 = [
 ]
 dev = [
   "pytest>=8,<10",
-  "ruff==0.16.6",
+  "ruff==0.16.8",
 ]
 
 [project.urls]
