@@ -28,6 +28,17 @@ class OpenSourceContract(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn(f"v{stagecraft.__version__}", readme)
 
+    def test_dev_pins_match_and_geneformer_manifest_is_not_updated(self):
+        dev = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
+        pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        pin = "ruff==0.16.8"
+        self.assertIn(pin, dev)
+        self.assertIn(f'"{pin}"', pyproject)
+        dependabot = (ROOT / ".github/dependabot.yml").read_text(encoding="utf-8")
+        self.assertIn("references/part6-requirements.txt", dependabot)
+        pins = (ROOT / "references/part6-requirements.txt").read_text(encoding="utf-8")
+        self.assertIn("anndata==0.9.2", pins)
+
     def test_argparse_module_docs_encode_on_windows_console(self):
         paths = sorted((ROOT / "scripts").glob("*.py")) + [ROOT / "quickstart.py"]
         for path in paths:

@@ -5,6 +5,9 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    exclude-paths:
+      # Historical Geneformer candidate pins, not the helper runtime.
+      - "references/part6-requirements.txt"
     ignore:
       # Geneformer stack is pinned in references/part6-requirements.txt.
       - dependency-name: transformers

@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Changed
+- Dev checks pin ruff 0.16.8.
+- Dependabot skips `references/part6-requirements.txt`. Those pins are a historical Geneformer candidate, not the helper runtime.
+
 ## [2.1.1] - 2026-09-21
 
 ### Fixed

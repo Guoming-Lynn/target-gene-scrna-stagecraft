@@ -1,4 +1,6 @@
-# Geneformer-only dependencies for Part 6; install in a separate Python 3.10 environment.
+# Historical Geneformer candidate pins for a separate Python 3.10 environment.
+# Not a verified install recipe. Excluded from Dependabot.
+# See references/part6-runtime.md.
 torch==2.0.1
 transformers==4.30.2
 datasets==2.13.1
