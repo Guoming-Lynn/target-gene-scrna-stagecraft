@@ -315,9 +315,12 @@ because this slope did not pass q.
 
 ## 7. Pathways
 
-- Primary: CAMERA on the voom design (competitive).
+- Primary: CAMERA on the voom design (competitive). Blocked fits pass the
+  saved sample correlation into CAMERA. `inter.gene.cor` defaults to 0.01 and
+  can be frozen under `pathways.inter_gene_cor`.
 - Secondary: fgsea multilevel on the primary moderated-t ranking
-  (`minSize=10`, `maxSize=500`).
+  (`minSize=10`, `maxSize=500`, `eps=1e-50`, `nPermSimple=1000` unless
+  `pathways` overrides them). fgsea is required; a CAMERA-only table is not written.
 - Libraries: frozen local JSON, SHA-256 checked.
 - ORA: only for a pre-specified strict non-technical DEG query of 10–500
   genes and ≤20% of the tested universe; otherwise skip.

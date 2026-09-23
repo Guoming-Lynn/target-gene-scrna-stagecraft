@@ -11,9 +11,13 @@ suppressPackageStartupMessages({
   library(digest)
 })
 options(stringsAsFactors = FALSE)
+`%||%` <- function(x, fallback) if (is.null(x) || !length(x)) fallback else x
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1L) stop("usage: Rscript part5_run_pathways.R analysis_config.yaml")
+if (!requireNamespace("fgsea", quietly = TRUE)) {
+  stop("fgsea is required for Part 5 pathways. A CAMERA-only table is not dual-method evidence.")
+}
 cfg_path <- normalizePath(args[[1]], winslash = "/", mustWork = TRUE)
 cfg <- yaml.load_file(cfg_path)
 if (!is.null(cfg$random_seed)) set.seed(cfg$random_seed) else set.seed(42L)
@@ -32,10 +36,18 @@ voom <- obj$voom
 design <- obj$design
 exposure <- obj$exposure
 if (!exposure %in% colnames(design)) stop("exposure coefficient missing from saved design")
+pathway_cfg <- cfg$pathways
+inter_gene_cor <- pathway_cfg$inter_gene_cor %||% 0.01
+fgsea_eps <- pathway_cfg$fgsea_eps %||% 1e-50
+fgsea_n_perm_simple <- as.integer(pathway_cfg$fgsea_n_perm_simple %||% 1000L)
+min_size <- as.integer(pathway_cfg$min_size %||% 10L)
+max_size <- as.integer(pathway_cfg$max_size %||% 500L)
+q_cut <- cfg$models$q_cut %||% 0.05
+blocked <- isTRUE(obj$blocked) && is.finite(obj$consensus)
 
 tables <- resolve(cfg$paths$tables_dir)
 dir.create(tables, recursive = TRUE, showWarnings = FALSE)
-outputs <- file.path(tables, c("camera_pathways.csv", "fgsea_pathways.csv", "pathway_evidence.csv"))
+outputs <- file.path(tables, c("camera_pathways.csv", "fgsea_pathways.csv", "pathway_evidence.csv", "pathway_audit.json"))
 if (any(file.exists(outputs))) stop("Refusing to overwrite pathway outputs")
 
 load_gmt <- function(path) {
@@ -56,13 +68,12 @@ if (anyDuplicated(vapply(gmt_entries, function(e) basename(e$path), character(1)
 
 index_from_gmt <- function(gmt, universe) {
   idx <- lapply(gmt, function(genes) which(universe %in% genes))
-  idx[vapply(idx, length, integer(1)) >= 10L & vapply(idx, length, integer(1)) <= 500L]
+  idx[vapply(idx, length, integer(1)) >= min_size & vapply(idx, length, integer(1)) <= max_size]
 }
 
 universe <- rownames(fit$coefficients)
 camera_rows <- list()
 fgsea_rows <- list()
-have_fgsea <- requireNamespace("fgsea", quietly = TRUE)
 
 stat <- fit$t[, exposure]
 names(stat) <- universe
@@ -81,48 +92,68 @@ for (entry in gmt_entries) {
     )
     next
   }
-  cam <- camera(voom, idx, design, contrast = as.numeric(colnames(design) == exposure), sort = FALSE)
+  camera_call <- list(
+    voom, idx, design,
+    contrast = as.numeric(colnames(design) == exposure),
+    sort = FALSE, inter.gene.cor = inter_gene_cor
+  )
+  if (blocked) {
+    camera_call$correlation <- obj$consensus
+    camera_call$block <- obj$block
+  }
+  cam <- do.call(camera, camera_call)
   cam$pathway <- rownames(cam)
   cam$library <- lib
-  cam$q_bh <- p.adjust(cam$PValue, method = "BH")
   camera_rows[[length(camera_rows) + 1L]] <- data.frame(
     library = cam$library, pathway = cam$pathway, NGenes = cam$NGenes,
-    Direction = cam$Direction, PValue = cam$PValue, q_bh = cam$q_bh,
-    status = "SUCCESS", stringsAsFactors = FALSE
+    Direction = cam$Direction, PValue = cam$PValue,
+    status = "SUCCESS", inter_gene_cor = inter_gene_cor,
+    blocked = blocked, stringsAsFactors = FALSE
   )
-  if (have_fgsea) {
-    fg <- fgsea::fgseaMultilevel(pathways = gmt[names(idx)], stats = stat, minSize = 10, maxSize = 500)
-    fgsea_rows[[length(fgsea_rows) + 1L]] <- data.frame(
-      library = lib, pathway = fg$pathway, NES = fg$NES, PValue = fg$pval,
-      q_bh = fg$padj, status = "SUCCESS", stringsAsFactors = FALSE
-    )
-  }
+  fg <- fgsea::fgseaMultilevel(
+    pathways = gmt[names(idx)], stats = stat,
+    minSize = min_size, maxSize = max_size,
+    eps = fgsea_eps, nPermSimple = fgsea_n_perm_simple
+  )
+  fgsea_rows[[length(fgsea_rows) + 1L]] <- data.frame(
+    library = lib, pathway = fg$pathway, NES = fg$NES, PValue = fg$pval,
+    status = "SUCCESS", eps = fgsea_eps, n_perm_simple = fgsea_n_perm_simple,
+    stringsAsFactors = FALSE
+  )
 }
 
 camera_tab <- do.call(rbind, camera_rows)
 camera_tab$q_bh <- p.adjust(camera_tab$PValue, method = "BH")
 write.csv(camera_tab, file.path(tables, "camera_pathways.csv"), row.names = FALSE)
 
-if (length(fgsea_rows)) {
-  fgsea_tab <- do.call(rbind, fgsea_rows)
-  fgsea_tab$q_bh <- p.adjust(fgsea_tab$PValue, method = "BH")
-  write.csv(fgsea_tab, file.path(tables, "fgsea_pathways.csv"), row.names = FALSE)
-  merged <- merge(
-    camera_tab[, c("library", "pathway", "Direction", "q_bh")],
-    fgsea_tab[, c("library", "pathway", "NES", "q_bh")],
-    by = c("library", "pathway"), suffixes = c("_camera", "_fgsea")
-  )
-  merged$same_direction <- (merged$Direction == "Up" & merged$NES > 0) | (merged$Direction == "Down" & merged$NES < 0)
-  merged$dual_method_candidate <- merged$q_bh_camera < 0.05 & merged$q_bh_fgsea < 0.05 & merged$same_direction
-  merged$robust_primary <- NA
-  merged$robustness_status <- "PENDING_PATHWAY_LODO_AND_TECHNICAL_LEADING_EDGE"
-  write.csv(merged, file.path(tables, "pathway_evidence.csv"), row.names = FALSE)
-  message("Dual-method candidates: ", sum(merged$dual_method_candidate, na.rm = TRUE),
-          "; pathway LODO and technical leading-edge audit remain required")
-} else {
-  write.csv(camera_tab, file.path(tables, "pathway_evidence.csv"), row.names = FALSE)
-  message("fgsea package not installed; CAMERA-only table written. Dual-method robust_primary is not available.")
-}
+if (!length(fgsea_rows)) stop("fgsea produced no pathway rows")
+fgsea_tab <- do.call(rbind, fgsea_rows)
+fgsea_tab$q_bh <- p.adjust(fgsea_tab$PValue, method = "BH")
+write.csv(fgsea_tab, file.path(tables, "fgsea_pathways.csv"), row.names = FALSE)
+merged <- merge(
+  camera_tab[, c("library", "pathway", "Direction", "q_bh")],
+  fgsea_tab[, c("library", "pathway", "NES", "q_bh")],
+  by = c("library", "pathway"), suffixes = c("_camera", "_fgsea")
+)
+merged$same_direction <- (merged$Direction == "Up" & merged$NES > 0) | (merged$Direction == "Down" & merged$NES < 0)
+merged$dual_method_candidate <- merged$q_bh_camera < q_cut & merged$q_bh_fgsea < q_cut & merged$same_direction
+merged$q_cut <- q_cut
+merged$robust_primary <- NA
+merged$robustness_status <- "PENDING_PATHWAY_LODO_AND_TECHNICAL_LEADING_EDGE"
+write.csv(merged, file.path(tables, "pathway_evidence.csv"), row.names = FALSE)
+runtime_packages <- c("limma", "fgsea", "yaml", "jsonlite")
+write(
+  toJSON(list(
+    q_cut = q_cut, inter_gene_cor = inter_gene_cor, fgsea_eps = fgsea_eps,
+    fgsea_n_perm_simple = fgsea_n_perm_simple, min_size = min_size, max_size = max_size,
+    blocked = blocked, consensus = obj$consensus %||% NA_real_,
+    R = R.version.string,
+    packages = setNames(lapply(runtime_packages, function(p) as.character(packageVersion(p))), runtime_packages)
+  ), auto_unbox = TRUE, pretty = TRUE, null = "null", na = "null"),
+  file.path(tables, "pathway_audit.json")
+)
+message("Dual-method candidates: ", sum(merged$dual_method_candidate, na.rm = TRUE),
+        "; pathway LODO and technical leading-edge audit remain required")
 
 message("Empty CAMERA after a large shift is expected. Do not swap the GMT to obtain a paragraph.")
 

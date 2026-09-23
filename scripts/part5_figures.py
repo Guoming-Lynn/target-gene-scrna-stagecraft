@@ -23,10 +23,13 @@ import numpy as np
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
+_ROOT = SCRIPT_DIR.parent
+for _path in (str(_ROOT), str(SCRIPT_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from plotting_style import apply_publication_style, figure_size, load_plotting_config, save_figure  # noqa: E402
+from stagecraft.io import parse_bool_column, read_identity_csv  # noqa: E402
 
 STATUS_COLORS = {
     "formal": "#009E73",
@@ -79,7 +82,7 @@ def plot_exposure(
     source_key: str,
     input_files: list[Path],
 ) -> None:
-    work = meta.loc[meta["eligible"].astype(bool)].copy() if "eligible" in meta.columns else meta.copy()
+    work = meta.loc[parse_bool_column(meta["eligible"], "eligible")].copy() if "eligible" in meta.columns else meta.copy()
     sources = list(dict.fromkeys(work[source_key].astype(str)))
     fig, ax = plt.subplots(figsize=figure_size(config, "wide_panel"), layout="constrained")
     data = [work.loc[work[source_key].astype(str).eq(s), exposure].to_numpy(float) for s in sources]
@@ -113,7 +116,7 @@ def plot_collinear(
     y: str,
     input_files: list[Path],
 ) -> None:
-    work = meta.loc[meta["eligible"].astype(bool)].copy() if "eligible" in meta.columns else meta.copy()
+    work = meta.loc[parse_bool_column(meta["eligible"], "eligible")].copy() if "eligible" in meta.columns else meta.copy()
     xv = work[x].to_numpy(float)
     yv = work[y].to_numpy(float)
     mask = np.isfinite(xv) & np.isfinite(yv)
@@ -145,7 +148,7 @@ def plot_volcano(
     p = frame[pcol].to_numpy(float)
     y = -np.log10(np.clip(p, 1e-300, 1))
     q = frame[qcol].to_numpy(float) if qcol in frame.columns else np.full(len(frame), np.nan)
-    robust = frame["robust_primary"].astype(bool).to_numpy() if "robust_primary" in frame.columns else (
+    robust = parse_bool_column(frame["robust_primary"], "robust_primary").to_numpy() if "robust_primary" in frame.columns else (
         (np.abs(x) >= logfc_floor) & (q < q_cut)
     )
     technical = frame[name_col].astype(str).map(_is_technical).to_numpy()
@@ -329,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     config = _config(args.config)
-    table = pd.read_csv(args.table)
+    table = read_identity_csv(args.table)
     if args.command in {"holdout", "loo", "forest", "within"} and args.gene and args.gene != "TARGET_GENE":
         if "gene" in table.columns:
             table = table.loc[table["gene"].astype(str).eq(args.gene) | table["gene"].isna()].copy()

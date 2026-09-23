@@ -1,7 +1,7 @@
 ---
 name: target-gene-scrna-stagecraft
 description: >-
-  Rigorous multi-study scRNA-seq workflow for a pre-specified target gene:
+  Protocol-driven multi-study scRNA-seq workflow for a pre-specified target gene:
   library-level QC, strict common-gene counts, human-locked clustering,
   descriptive target-gene surveys, compartment cleanup, donor-unit association
   with limma/edgeR and source-block LODO, and pinned Geneformer virtual KO/OE
@@ -394,7 +394,7 @@ Parts 7–8 are future claim types. Do not run them from this skill.
 
 ## Validators
 
-Environment setup and synthetic tests: [README.md](README.md#dependencies-and-validation).
+Environment setup and synthetic tests: [README.md](README.md#validation-helpers-not-scientific-certification).
 Run one frozen Part 5 arm per config/stage. The R runner produces measured
 gene evidence, all source-block holdouts, and donor LOO. Project-specific
 confound diagnostics and pathway robustness must still be completed before

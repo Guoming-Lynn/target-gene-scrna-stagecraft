@@ -79,6 +79,26 @@ class OpenSourceContract(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 part1_init.main(["--out", str(out), "--gene", "DEMO"])
 
+    def test_part1_init_rejects_blank_gene_before_writing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "stage"
+            with self.assertRaises(SystemExit):
+                part1_init.main(["--out", str(out), "--gene", "  "])
+            self.assertFalse(out.exists())
+
+    def test_identity_csv_keeps_leading_zeros_and_bools_are_strict(self):
+        from stagecraft.io import parse_bool_column, read_identity_csv
+        import pandas as pd
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "meta.csv"
+            pd.DataFrame({"donor_id": ["001", "002"], "eligible": ["true", "false"]}).to_csv(path, index=False)
+            frame = read_identity_csv(path)
+            self.assertEqual(frame.donor_id.tolist(), ["001", "002"])
+            self.assertEqual(parse_bool_column(frame.eligible, "eligible").tolist(), [True, False])
+            with self.assertRaises(SystemExit):
+                parse_bool_column(pd.Series(["Yes", "No"]), "eligible")
+
     def test_generate_toy_data_refuses_overwrite(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "toy.h5ad"

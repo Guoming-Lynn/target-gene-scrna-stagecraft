@@ -24,7 +24,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from stagecraft.io import CSV_EXCEL, exit_reason, require_new
+from stagecraft.io import CSV_EXCEL, exit_reason, parse_bool_column, read_identity_csv, require_new
 
 
 def _split(raw: str) -> list[str]:
@@ -128,7 +128,7 @@ def evaluate(
     drop_single: bool,
     part4: pd.DataFrame | None,
 ) -> pd.DataFrame:
-    work = meta.loc[meta["eligible"].astype(bool)].copy() if "eligible" in meta.columns else meta.copy()
+    work = meta.loc[parse_bool_column(meta["eligible"], "eligible")].copy() if "eligible" in meta.columns else meta.copy()
     if work.empty:
         raise SystemExit("no eligible units")
     rows = []
@@ -233,8 +233,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
 
-    meta = pd.read_csv(args.metadata)
-    part4 = pd.read_csv(args.part4) if args.part4 else None
+    meta = read_identity_csv(args.metadata)
+    part4 = read_identity_csv(args.part4) if args.part4 else None
     table = evaluate(
         meta,
         arm_key=args.arm_key,

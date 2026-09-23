@@ -22,8 +22,10 @@ import pandas as pd
 from matplotlib.patches import Patch
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
+_ROOT = SCRIPT_DIR.parent
+for _path in (str(_ROOT), str(SCRIPT_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from plotting_style import (  # noqa: E402
     apply_publication_style,
@@ -31,6 +33,7 @@ from plotting_style import (  # noqa: E402
     load_plotting_config,
     save_figure,
 )
+from stagecraft.io import read_identity_csv  # noqa: E402
 
 FLAG_COLORS = {
     "RANGE_OK": "#009E73",
@@ -280,7 +283,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-plot", action="store_true")
     args = parser.parse_args(argv)
 
-    units = pd.read_csv(args.unit_csv)
+    units = read_identity_csv(args.unit_csv)
     table = identifiability_table(
         units,
         args.group,

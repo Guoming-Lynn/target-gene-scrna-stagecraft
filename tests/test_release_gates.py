@@ -33,7 +33,7 @@ class ReleaseGates(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             (root / 'audit.json').write_text(json.dumps({'evidence_ceiling': 'causal', 'can_only_downgrade': False}))
-            (root / 'table.yaml').write_text('rows:\n  - token: PASS\n    when: {}\n')
+            (root / 'table.yaml').write_text('rows:\n  - token: INCONCLUSIVE\n    when: {}\n')
             verdict_main([str(root / 'audit.json'), '--table', str(root / 'table.yaml'), '--out', str(root / 'out.json')])
             result = json.loads((root / 'out.json').read_text())
             self.assertEqual(result['evidence_ceiling'], 'exploratory_embedding_only')

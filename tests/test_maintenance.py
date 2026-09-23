@@ -14,6 +14,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import hash_inputs as hashes
+from stagecraft.hashing import sha256_file
 import check_protocol as protocol
 import cluster_review_tables as review
 import part2_figures as part2
@@ -52,6 +53,14 @@ class Maintenance(unittest.TestCase):
             path.write_bytes(b"changed")
             with self.assertRaises(ValueError):
                 hashes.verify_entries({"path": "data.bin", "sha256": expected}, root)
+
+    def test_sha256_file_rejects_nonpositive_block_size(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "data.bin"
+            path.write_bytes(b"abc")
+            for block_size in (0, -1, True, 1.5):
+                with self.subTest(block_size=block_size), self.assertRaises(ValueError):
+                    sha256_file(path, block_size)
 
     def test_hash_scan_bare_filenames_and_empty_manifest_fail(self):
         found = []

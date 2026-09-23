@@ -64,7 +64,7 @@ write_yaml(cfg,cfg_path)
 runner <- "scripts/part5_run_models.R"
 rscript <- file.path(R.home("bin"),"Rscript.exe")
 if (!file.exists(rscript)) rscript <- file.path(R.home("bin"),"Rscript")
-output <- system2(rscript,c(shQuote(runner),shQuote(cfg_path)),stdout=TRUE,stderr=TRUE)
+output <- system2(rscript,c("--vanilla",shQuote(runner),shQuote(cfg_path)),stdout=TRUE,stderr=TRUE)
 cat(paste(output,collapse="\n"),"\n")
 stopifnot(is.null(attr(output,"status")))
 effects <- read.csv(file.path(root,"02_tables/gene_effects.csv"))
@@ -72,7 +72,10 @@ audit <- fromJSON(file.path(root,"05_logs/model_audit.json"))
 stopifnot(audit$full_status == "SUCCESS", audit$n_donors == 24L,
  audit$source_evidence == "INTERNAL_SENSITIVITY_ONLY",
  all(c("LODO_1","LODO_2","LODO_3") %in% effects$subset),
- all(is.finite(effects$exposure_vif[effects$subset=="FULL" & effects$model=="limma_primary"])))
+ all(is.finite(effects$exposure_vif[effects$subset=="FULL" & effects$model=="limma_primary"])),
+ !is.null(audit$runtime$R), !isTRUE(audit$blocking$blocked))
+saved <- readRDS(file.path(root,"05_logs/primary_fit.rds"))
+stopifnot(isFALSE(saved$blocked), "consensus" %in% names(saved), "block" %in% names(saved))
 cat("SCIENTIFIC_REGRESSION_OK\nArtifacts:",root,"\n")
 
 # Repeat biological donors across subtypes: exercise duplicateCorrelation and
@@ -103,6 +106,10 @@ stopifnot(joint_audit$n_donors == n, joint_audit$n_units == 2*n,
           !joint_audit$scientifically_calibrated,
           !joint_audit$formal_gates_pass,
           joint_audit$model_mode_status == "EXPLORATORY_ONLY_CALIBRATION_CONCERN",
-          joint_audit$precision_status == "DESCRIPTIVE_CI_PRECISION_ONLY")
+          joint_audit$precision_status == "DESCRIPTIVE_CI_PRECISION_ONLY",
+          isTRUE(joint_audit$blocking$blocked),
+          is.finite(joint_audit$blocking$consensus))
+joint_fit <- readRDS(file.path(joint,"05_logs/primary_fit.rds"))
+stopifnot(isTRUE(joint_fit$blocked), is.finite(joint_fit$consensus), length(joint_fit$block) == nrow(joint_meta))
 cat("JOINT_DONOR_REGRESSION_OK\n")
 

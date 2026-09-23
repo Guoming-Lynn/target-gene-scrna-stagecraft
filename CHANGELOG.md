@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Blocked Part 5 fits re-estimate `duplicateCorrelation` after the second voom and pass that consensus into CAMERA.
+- Part 5 pathways require fgsea and read `q_cut`, CAMERA `inter.gene.cor`, and fgsea Monte Carlo settings from config.
+- `model_audit.json` records R and package versions. `part5_verdict.py` reports a local freeze receipt when one is present.
+
 ### Changed
 - Dev checks pin ruff 0.16.8.
 - Dependabot skips `references/part6-requirements.txt`. Those pins are a historical Geneformer candidate, not the helper runtime.
@@ -30,7 +35,7 @@ All notable changes to this project are documented here.
 ### Changed
 - README, Chinese README, INSTALL, and SKILL now state which parts have CLIs versus specification-only execution.
 - Quickstart runs the toy helper demo instead of writing an unused h5ad.
-- `simulation_contract.py` labels itself `MANIFEST_ONLY` and documents that `--replicates` does not fit models.
+- `simulation_contract.py` labels itself `MANIFEST_ONLY`. `--declared-replicates` (alias `--replicates`) records a count and does not fit models.
 - Overwrite refusal, SHA-256, YAML loading, and Excel CSV encoding share one helper module.
 - Part 6 status is `specified / not turnkey` in the pipeline map.
 

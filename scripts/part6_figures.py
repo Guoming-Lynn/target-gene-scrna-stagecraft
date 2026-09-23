@@ -24,11 +24,14 @@ import numpy as np
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
+_ROOT = SCRIPT_DIR.parent
+for _path in (str(_ROOT), str(SCRIPT_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from plotting_style import apply_publication_style, figure_size, load_plotting_config, save_figure as _save_figure  # noqa: E402
 from part6_sign_tests import median_order_statistic_interval  # noqa: E402
+from stagecraft.io import parse_bool_column, read_identity_csv  # noqa: E402
 
 
 def save_figure(fig, stem, config, *, parameters=None, input_files=None):
@@ -74,7 +77,7 @@ def plot_eligibility(table: pd.DataFrame, config: Mapping[str, Any], stem: Path,
         frame = table.copy()
     donors = frame["dataset_donor_id"].astype(str).tolist()
     n = frame["n_success"].to_numpy(float) if "n_success" in frame.columns else np.zeros(len(frame))
-    ok = frame["eligible"].astype(bool) if "eligible" in frame.columns else np.ones(len(frame), dtype=bool)
+    ok = parse_bool_column(frame["eligible"], "eligible") if "eligible" in frame.columns else np.ones(len(frame), dtype=bool)
     colors = [PASS_COLOR if flag else FAIL_COLOR for flag in ok]
     fig, ax = plt.subplots(figsize=figure_size(config, "wide_panel"), layout="constrained")
     ax.barh(range(len(donors)), np.nan_to_num(n), color=colors, height=0.7)
@@ -93,7 +96,7 @@ def plot_donors(
     unpaired: bool,
     input_files: list[Path],
 ) -> None:
-    frame = table.loc[table["eligible"].astype(bool)].copy() if "eligible" in table.columns else table.copy()
+    frame = table.loc[parse_bool_column(table["eligible"], "eligible")].copy() if "eligible" in table.columns else table.copy()
     endpoints = list(dict.fromkeys(frame["endpoint"].astype(str)))
     perts = [p for p in ("KO", "OE") if p in set(frame["perturbation"].astype(str).str.upper())]
     if not perts:
@@ -152,7 +155,7 @@ def plot_forest(table: pd.DataFrame, config: Mapping[str, Any], stem: Path, inpu
         summaries = []
         for (endpoint, pert), group in frame.groupby(["endpoint", "perturbation"], sort=True):
             if "eligible" in group:
-                group = group.loc[group["eligible"].astype(bool)]
+                group = group.loc[parse_bool_column(group["eligible"], "eligible")]
             if "dataset_donor_id" not in group or group["dataset_donor_id"].duplicated().any():
                 raise SystemExit("Forest requires one row per biological donor; separate populations")
             values = group["median_delta_axis"].to_numpy(float)
@@ -205,7 +208,7 @@ def plot_ranks(table: pd.DataFrame, config: Mapping[str, Any], stem: Path, input
         frame = table.sort_values(col)
         names = frame["target_symbol"].astype(str).tolist()
         vals = frame[col].to_numpy(float)
-        is_t = frame["is_target"].astype(bool) if "is_target" in frame.columns else [False] * len(frame)
+        is_t = parse_bool_column(frame["is_target"], "is_target") if "is_target" in frame.columns else [False] * len(frame)
         colors = [KO_COLOR if flag else FAIL_COLOR for flag in is_t]
         ax.barh(range(len(names)), vals, color=colors, height=0.7)
         ax.set_yticks(range(len(names)), names, fontsize=6)
@@ -296,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
         payload = json.loads(args.table.read_text(encoding="utf-8"))
         plot_sham(payload, config, args.out / "F06_08_sham", inputs)
     else:
-        table = pd.read_csv(args.table)
+        table = read_identity_csv(args.table)
         if args.command == "observability":
             plot_observability(table, config, args.out / "F06_01_token_observability", inputs)
         elif args.command == "eligibility":

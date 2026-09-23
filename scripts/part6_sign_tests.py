@@ -11,11 +11,18 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import sys
 from math import comb
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.io import parse_bool_column, read_identity_csv  # noqa: E402
 
 
 def median_order_statistic_interval(values, confidence=0.95):
@@ -92,7 +99,7 @@ def sign_tests(
 ) -> pd.DataFrame:
     frame = donor.loc[donor["target_symbol"].astype(str).eq(target)].copy()
     if "eligible" in frame.columns:
-        frame = frame.loc[frame["eligible"].astype(bool)].copy()
+        frame = frame.loc[parse_bool_column(frame["eligible"], "eligible")].copy()
     endpoints = endpoints or sorted(frame["endpoint"].astype(str).unique())
     perturbations = perturbations or sorted(frame["perturbation"].astype(str).unique())
     records = []
@@ -209,7 +216,7 @@ def main(argv: list[str] | None = None) -> int:
     endpoints = [item.strip() for item in args.endpoints.split(",") if item.strip()] or None
     perts = [item.strip() for item in args.perturbations.split(",") if item.strip()]
     table = sign_tests(
-        pd.read_csv(args.donors),
+        read_identity_csv(args.donors),
         target=args.target,
         family_size=args.family_size,
         perturbations=perts,

@@ -17,9 +17,12 @@ from pathlib import Path
 from typing import Any, Mapping
 
 _ROOT = Path(__file__).resolve().parents[1]
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
+_SCRIPTS = Path(__file__).resolve().parent
+for _path in (str(_ROOT), str(_SCRIPTS)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
+from protocol_chronology import check_chronology
 from stagecraft.io import load_yaml_rows, require_new
 
 
@@ -55,23 +58,36 @@ def matches(when: Mapping[str, Any] | None, audit: Mapping[str, Any]) -> bool:
             if _as_bool(observed) != _as_bool(expected):
                 return False
             continue
-        if observed is None:
+        try:
+            if abs(float(observed) - float(expected)) <= 1e-9:
+                continue
             return False
-        if str(observed) != str(expected):
-            return False
+        except (TypeError, ValueError):
+            if str(observed) != str(expected):
+                return False
     return True
+
+
+def allowed_verdict_tokens() -> set[str]:
+    tokens: set[str] = set()
+    for name in ("part5_verdict_table.example.yaml", "part6_verdict_table.example.yaml"):
+        for row in load_yaml_rows(Path(__file__).resolve().parent / name):
+            tokens.add(str(row.get("token") or "").strip())
+    return tokens
 
 
 def apply_table(rows: list[dict[str, Any]], audit: Mapping[str, Any]) -> dict[str, Any]:
     # Validate every row, including unreachable rows, before evaluating matches.
-    # These legacy tokens falsely promoted internal holdouts to external evidence.
     forbidden = {"EXTERNALLY_REPLICATED", "EXTERNALLY_CONSISTENT_UNDERPOWERED"}
     if any(str(row.get("token", "")).strip() in forbidden for row in rows):
         raise SystemExit("Internal sensitivity cannot emit external-replication tokens")
+    allowed = allowed_verdict_tokens()
     for index, row in enumerate(rows, 1):
         token = str(row.get("token") or "").strip()
         if not token:
             raise SystemExit(f"verdict row {index} has no token")
+        if token not in allowed:
+            raise SystemExit(f"verdict token {token} is not in the registered tables")
         if matches(row.get("when") or {}, audit):
             return {
                 "status": "SUCCESS",
@@ -140,6 +156,21 @@ def guarded_verdict(rows, audit):
     return verdict
 
 
+def observed_chronology(audit_path: Path) -> str:
+    """Read a local freeze receipt when the audit lives in a stage directory."""
+    stage = audit_path.resolve().parent
+    if stage.name == "05_logs":
+        stage = stage.parent
+    protocol = stage / "00_protocol_manifest" / "PROTOCOL.md"
+    receipt = stage / "00_protocol_manifest" / "protocol_freeze.json"
+    if not protocol.is_file() or not receipt.is_file():
+        return "NOT_VERIFIED"
+    try:
+        return str(check_chronology(protocol, stage))
+    except (ValueError, OSError, KeyError, TypeError) as exc:
+        return f"FAILED: {exc}"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("audit", type=Path)
@@ -148,6 +179,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     verdict = guarded_verdict(load_table(args.table), load_audit(args.audit))
+    verdict["protocol_chronology"] = observed_chronology(args.audit)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     require_new(args.out)
     args.out.write_text(json.dumps(verdict, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

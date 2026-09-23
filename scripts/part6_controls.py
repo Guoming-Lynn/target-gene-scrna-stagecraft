@@ -17,10 +17,17 @@ from __future__ import annotations
 
 import argparse
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.io import parse_bool_column, read_identity_csv  # noqa: E402
 
 CYCLE = {
     "MKI67", "TOP2A", "PCNA", "MCM2", "MCM3", "MCM4", "MCM5", "MCM6", "MCM7",
@@ -73,7 +80,7 @@ def select_controls(
     missing = required.difference(genes.columns)
     if missing:
         raise SystemExit(f"gene stats missing columns: {sorted(missing)}")
-    frame = genes.loc[genes["in_model_vocabulary"].astype(bool)].copy()
+    frame = genes.loc[parse_bool_column(genes["in_model_vocabulary"], "in_model_vocabulary")].copy()
     frame = frame.loc[~frame["gene_symbol"].duplicated(keep=False)].copy()
     if frame["gene_symbol"].eq(target).sum() != 1:
         raise SystemExit(f"{target} must have exactly one model-visible row")
@@ -134,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     union = {line.strip() for line in args.endpoint_union.read_text(encoding="utf-8").splitlines() if line.strip()}
     excluded = {line.strip() for line in args.exclude_genes.read_text(encoding="utf-8").splitlines() if line.strip()} if args.exclude_genes else set()
     selected, candidates, window = select_controls(
-        pd.read_csv(args.genes), target=args.target, endpoint_union=union, excluded_genes=excluded, max_n=args.max_n
+        read_identity_csv(args.genes), target=args.target, endpoint_union=union, excluded_genes=excluded, max_n=args.max_n
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     if args.out.exists():

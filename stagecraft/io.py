@@ -9,6 +9,16 @@ from typing import Any
 # Human-facing review worksheets opened in Excel. Machine tables use UTF-8.
 CSV_EXCEL = "utf-8-sig"
 CSV_MACHINE = "utf-8"
+IDENTITY_COLUMNS = (
+    "dataset",
+    "donor_id",
+    "dataset_donor_id",
+    "unit_id",
+    "cell_id",
+    "omitted_donor",
+)
+_BOOL_TRUE = {"true", "1"}
+_BOOL_FALSE = {"false", "0"}
 
 
 def repo_root_from_script(script_file: str) -> Path:
@@ -56,3 +66,32 @@ def exit_reason(exc: BaseException) -> str:
     if getattr(exc, "args", None):
         return str(exc.args[0])
     return str(exc)
+
+
+def parse_bool_column(series, name: str = "flag"):
+    """Map true/false/1/0. Any other token, including yes/no, is a hard failure."""
+    import pandas as pd
+
+    if series.isna().any():
+        raise SystemExit(f"{name} has missing values")
+    if pd.api.types.is_bool_dtype(series):
+        return series.astype(bool)
+    mapped = series.astype(str).str.strip().str.lower().map(
+        {**{token: True for token in _BOOL_TRUE}, **{token: False for token in _BOOL_FALSE}}
+    )
+    if mapped.isna().any():
+        bad = sorted(set(series.astype(str)[mapped.isna()]))[:8]
+        raise SystemExit(f"{name} must be true/false or 1/0; got {bad}")
+    return mapped.astype(bool)
+
+
+def read_identity_csv(path: Path, **kwargs):
+    """Read a CSV without coercing donor or cell identifiers to numbers."""
+    import pandas as pd
+
+    path = Path(path)
+    header = pd.read_csv(path, nrows=0)
+    dtype = {column: str for column in IDENTITY_COLUMNS if column in header.columns}
+    dtype.update(kwargs.pop("dtype", {}) or {})
+    kwargs.setdefault("encoding", "utf-8-sig")
+    return pd.read_csv(path, dtype=dtype, **kwargs)

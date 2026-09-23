@@ -24,7 +24,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from stagecraft.io import CSV_EXCEL, load_yaml, require_new, require_yaml
+from stagecraft.io import CSV_EXCEL, load_yaml, parse_bool_column, read_identity_csv, require_new, require_yaml
 from stagecraft.numeric import nonpositive
 
 GSE_RE = re.compile(r"GSE(\d+)", re.I)
@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
 
-    meta = pd.read_csv(args.metadata)
+    meta = read_identity_csv(args.metadata)
     if args.dataset_key not in meta.columns:
         raise SystemExit(f"metadata missing {args.dataset_key}")
     if args.exposure not in meta.columns:
@@ -199,9 +199,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             raise SystemExit("metadata needs dataset_donor_id or donor_id")
     if "eligible" in meta.columns and not args.all_units:
-        eligible = meta["eligible"].astype(str).str.lower().map({"true": True, "false": False, "1": True, "0": False})
-        if eligible.isna().any():
-            raise SystemExit("eligible must be true/false or 1/0.")
+        eligible = parse_bool_column(meta["eligible"], "eligible")
         work = meta.loc[eligible].copy()
     else:
         work = meta.copy()
@@ -246,7 +244,7 @@ def main(argv: list[str] | None = None) -> int:
 
     loo_audit = {}
     if args.loo is not None:
-        loo = relabel_loo(pd.read_csv(args.loo), work, args.dataset_key)
+        loo = relabel_loo(read_identity_csv(args.loo), work, args.dataset_key)
         loo_path = args.out / "loo_with_source.csv"
         require_new(loo_path)
         loo.to_csv(loo_path, index=False, encoding=CSV_EXCEL)

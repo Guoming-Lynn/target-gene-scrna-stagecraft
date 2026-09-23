@@ -13,10 +13,17 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import pandas as pd
 import numpy as np
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.io import read_identity_csv  # noqa: E402
 
 ILLEGAL = "ILLEGAL_MISMATCH"
 TRUNCATION = "CAP_TRUNCATION"
@@ -112,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-gene-tokens", type=int, default=4094)
     args = parser.parse_args(argv)
     table = audit_ledger(
-        pd.read_csv(args.ledger),
+        read_identity_csv(args.ledger),
         max_length=args.max_length,
         max_gene_tokens=args.max_gene_tokens,
     )

@@ -67,6 +67,13 @@ models:
   logfc_floor: 0.10
   q_cut: 0.05
 
+pathways:
+  inter_gene_cor: 0.01
+  fgsea_eps: 1.0e-50
+  fgsea_n_perm_simple: 1000
+  min_size: 10
+  max_size: 500
+
 robustness:
   dominant_block: DOMINANT
 

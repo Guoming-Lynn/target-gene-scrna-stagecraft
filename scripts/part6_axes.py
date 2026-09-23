@@ -13,10 +13,17 @@ Usage (after original CLS is cached):
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.io import read_identity_csv  # noqa: E402
 
 
 def l2_normalize(vectors: np.ndarray, axis: int = -1, eps: float = 1e-12) -> np.ndarray:
@@ -138,8 +145,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--score-col", default=None)
     args = parser.parse_args(argv)
     cls = np.load(args.cls)
-    cells = pd.read_csv(args.cells)
-    score_table = pd.read_csv(args.scores)
+    cells = read_identity_csv(args.cells)
+    score_table = read_identity_csv(args.scores)
     col = args.score_col or args.endpoint
     if col not in score_table.columns:
         raise SystemExit(f"score column {col} missing")

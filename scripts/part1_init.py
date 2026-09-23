@@ -15,7 +15,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from stagecraft import EXIT_OK, EXIT_USAGE  # noqa: E402
+from stagecraft import EXIT_OK  # noqa: E402
 from stagecraft.io import require_new  # noqa: E402
 
 STAGE_DIRS = (
@@ -33,6 +33,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--gene", required=True, help="Pre-specified TARGET_GENE symbol")
     args = parser.parse_args(argv)
+    if not args.gene.strip():
+        raise SystemExit("TARGET_GENE must be a non-empty symbol")
     root = args.out
     if root.exists():
         raise SystemExit(f"Refusing to overwrite: {root}")
@@ -64,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(f"wrote Part 1 stage scaffold: {root}")
     print("Next: freeze PROTOCOL.md, then execute the Part 1 spec. No Scanpy runner is bundled.")
-    return EXIT_OK if args.gene.strip() else EXIT_USAGE
+    return EXIT_OK
 
 
 if __name__ == "__main__":

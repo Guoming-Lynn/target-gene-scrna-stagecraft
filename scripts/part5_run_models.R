@@ -24,7 +24,19 @@ if (length(args) < 1L) stop("usage: Rscript part5_run_models.R analysis_config.y
 cfg_path <- normalizePath(args[[1]], winslash = "/", mustWork = TRUE)
 cfg <- yaml.load_file(cfg_path)
 set.seed(cfg$random_seed %||% 42L)
+if (is.null(cfg$eligibility)) stop("Freeze eligibility: n_formal, min_datasets_formal, min_rdf_formal")
+missing_eligibility <- setdiff(
+  c("n_formal", "min_datasets_formal", "min_rdf_formal"),
+  names(cfg$eligibility)
+)
+if (length(missing_eligibility)) stop("Freeze eligibility: ", paste(missing_eligibility, collapse = ", "))
 stage_root <- dirname(dirname(cfg_path))
+
+note_from_error <- function(prefix, e) {
+  msg <- gsub("[\r\n]+", " ", conditionMessage(e))
+  if (nchar(msg) > 160L) msg <- paste0(substr(msg, 1L, 157L), "...")
+  paste(prefix, msg)
+}
 
 resolve <- function(p) {
   if (is.null(p) || !nzchar(p)) return(NULL)
@@ -45,6 +57,8 @@ if (any(file.exists(outputs))) stop("Refusing to overwrite existing Part 5 outpu
 target <- as.character(cfg$target_gene)
 stopifnot(nzchar(target))
 dataset_key <- if (!is.null(cfg$obs$dataset_key)) cfg$obs$dataset_key else "dataset"
+# Default block is the donor-unit key. n_blocks then equals n_donors unless
+# the protocol freezes a coarser key such as source_block.
 block_key <- if (!is.null(cfg$design$block)) cfg$design$block else "dataset_donor_id"
 donor_key <- cfg$design$donor_key %||% "dataset_donor_id"
 min_rdf <- as.integer(cfg$eligibility$min_rdf_fit)
@@ -168,16 +182,20 @@ build_design <- function(meta_sub, exposure_name) {
 }
 
 fit_blocked <- function(y, design, block) {
+  block <- as.character(block)
   v0 <- voomWithQualityWeights(y, design, plot = FALSE, normalize.method = "none")
   if (length(unique(block)) < 3L || all(table(block) == 1L)) {
     fit <- eBayes(lmFit(v0, design), robust = TRUE)
-    return(list(fit = fit, voom = v0, consensus = NA_real_, blocked = FALSE))
+    return(list(fit = fit, voom = v0, consensus = NA_real_, blocked = FALSE, block = block))
   }
+  # limma sequence: voom, duplicateCorrelation, voom(correlation),
+  # duplicateCorrelation again, then lmFit with the updated consensus.
   corfit <- duplicateCorrelation(v0, design, block = block)
   v <- voomWithQualityWeights(y, design, block = block, correlation = corfit$consensus,
                               plot = FALSE, normalize.method = "none")
+  corfit <- duplicateCorrelation(v, design, block = block)
   fit <- eBayes(lmFit(v, design, block = block, correlation = corfit$consensus), robust = TRUE)
-  list(fit = fit, voom = v, consensus = corfit$consensus, blocked = TRUE)
+  list(fit = fit, voom = v, consensus = corfit$consensus, blocked = TRUE, block = block)
 }
 
 extract_coef <- function(fit, coef_name, n_units, n_donors, n_datasets, rdf, subset, model, exposure_name, notes) {
@@ -211,10 +229,10 @@ run_limma <- function(meta_sub, counts_sub, exposure_name, subset, model, rdf_fl
   if (n_donors < (cfg$eligibility$n_exploratory %||% 8L) || !is.finite(exposure_sd) || exposure_sd < (sd_floor %||% 1e-8)) {
     return(list(table = placeholder_row(subset, model, "NOT_ESTIMABLE", "donor/exposure gate failed", n_units, n_donors, n_datasets), fit = NULL))
   }
-  built <- tryCatch(build_design(meta_sub, exposure_name), error = function(e) NULL)
-  if (is.null(built)) {
+  built <- tryCatch(build_design(meta_sub, exposure_name), error = function(e) e)
+  if (inherits(built, "error")) {
     return(list(
-      table = placeholder_row(subset, model, "NOT_ESTIMABLE", "design failed", n_units, n_donors, n_datasets),
+      table = placeholder_row(subset, model, "NOT_ESTIMABLE", note_from_error("design failed:", built), n_units, n_donors, n_datasets),
       fit = NULL
     ))
   }
@@ -243,19 +261,20 @@ run_limma <- function(meta_sub, counts_sub, exposure_name, subset, model, rdf_fl
     diagnostic$exposure_vif > (cfg$diagnostics$vif_review %||% 10) ||
     diagnostic$max_exposure_spearman > (cfg$diagnostics$rho_review %||% 0.9)
   if (isTRUE(review)) notes <- paste(notes, "COLLINEARITY_REVIEW_REQUIRED")
-  fy <- tryCatch(filter_y(counts_sub), error = function(e) NULL)
-  if (is.null(fy) || nrow(fy$y) < 5L) {
+  fy <- tryCatch(filter_y(counts_sub), error = function(e) e)
+  if (inherits(fy, "error") || nrow(fy$y) < 5L) {
+    filter_note <- if (inherits(fy, "error")) note_from_error("gene filter failed:", fy) else "too few genes after filter"
     return(list(
-      table = placeholder_row(subset, model, "NOT_ESTIMABLE", "too few genes after filter",
+      table = placeholder_row(subset, model, "NOT_ESTIMABLE", filter_note,
                               n_units, n_donors, n_datasets, rdf),
       fit = NULL
     ))
   }
   block <- as.character(meta_sub[[block_key]])
-  fitted <- tryCatch(fit_blocked(fy$y, design, block), error = function(e) NULL)
-  if (is.null(fitted)) {
+  fitted <- tryCatch(fit_blocked(fy$y, design, block), error = function(e) e)
+  if (inherits(fitted, "error")) {
     return(list(
-      table = placeholder_row(subset, model, "NOT_ESTIMABLE", "limma fit failed",
+      table = placeholder_row(subset, model, "NOT_ESTIMABLE", note_from_error("limma fit failed:", fitted),
                               n_units, n_donors, n_datasets, rdf),
       fit = NULL
     ))
@@ -275,13 +294,21 @@ run_edger <- function(meta_sub, counts_sub, exposure_name, subset) {
   n_donors <- length(unique(as.character(meta_sub[[donor_key]])))
   n_datasets <- length(unique(as.character(meta_sub[[dataset_key]])))
   if (anyDuplicated(meta_sub[[block_key]])) return(placeholder_row(subset, "edgeR_QL", "NOT_ESTIMABLE", "Repeated donor rows require a validated support model", n_units, n_donors, n_datasets))
-  built <- tryCatch(build_design(meta_sub, exposure_name), error = function(e) NULL)
-  if (is.null(built)) {
-    return(placeholder_row(subset, "edgeR_QL", "NOT_ESTIMABLE", "design failed", n_units, n_donors, n_datasets))
+  built <- tryCatch(build_design(meta_sub, exposure_name), error = function(e) e)
+  if (inherits(built, "error")) {
+    return(placeholder_row(subset, "edgeR_QL", "NOT_ESTIMABLE", note_from_error("design failed:", built), n_units, n_donors, n_datasets))
+  }
+  design <- built$design
+  rank <- qr(design)$rank
+  rdf <- nrow(design) - rank
+  if (rank < ncol(design) || rdf < min_rdf) {
+    return(placeholder_row(subset, "edgeR_QL", "NOT_ESTIMABLE",
+                           sprintf("rank %d residual df %d", rank, rdf),
+                           n_units, n_donors, n_datasets, rdf))
   }
   fy <- filter_y(counts_sub)
-  y <- estimateDisp(fy$y, built$design)
-  fit <- glmQLFit(y, built$design, robust = TRUE)
+  y <- estimateDisp(fy$y, design)
+  fit <- glmQLFit(y, design, robust = TRUE)
   qlf <- glmQLFTest(fit, coef = exposure_name)
   tt <- topTags(qlf, n = Inf, sort.by = "none")$table
   data.frame(
@@ -289,7 +316,7 @@ run_edger <- function(meta_sub, counts_sub, exposure_name, subset) {
     logFC = tt$logFC, CI_L = NA_real_, CI_R = NA_real_,
     P = tt$PValue, q_bh = tt$FDR,
     exposure_scale = exposure_name, n_units = n_units, n_donors = n_donors,
-    n_datasets = n_datasets, rdf = NA_integer_, status = "SUCCESS", notes = "",
+    n_datasets = n_datasets, rdf = rdf, status = "SUCCESS", notes = "",
     condition_number=NA_real_, exposure_vif=NA_real_, max_exposure_spearman=NA_real_,
     collinearity_review=NA, exposure_sd=NA_real_, exposure_iqr=NA_real_, n_source_blocks=NA_integer_,
     stringsAsFactors = FALSE
@@ -327,12 +354,12 @@ for (subset_name in names(subsets)) {
   all_tabs[[length(all_tabs) + 1L]] <- limma_p$table
   if (identical(subset_name, "FULL") && !is.null(limma_p$fit)) full_fit <- limma_p
   if (!is.null(alt_exposure) && nzchar(alt_exposure) && alt_exposure %in% names(meta_s)) {
-    limma_a <- run_limma(meta_s, counts_s, alt_exposure, subset_name, "limma_alternative")
+    limma_a <- run_limma(meta_s, counts_s, alt_exposure, subset_name, "limma_alternative", rdf_floor)
     all_tabs[[length(all_tabs) + 1L]] <- limma_a$table
   }
   if (identical(subset_name, "FULL") && isTRUE(cfg$models$support_edger)) {
-    ed <- tryCatch(run_edger(meta_s, counts_s, primary_exposure, subset_name), error = function(e) NULL)
-    if (is.null(ed)) ed <- placeholder_row(subset_name, "edgeR_QL", "NOT_ESTIMABLE", "edgeR fit failed", nrow(meta_s), length(unique(meta_s[[donor_key]])), length(unique(meta_s[[dataset_key]])))
+    ed <- tryCatch(run_edger(meta_s, counts_s, primary_exposure, subset_name), error = function(e) e)
+    if (inherits(ed, "error")) ed <- placeholder_row(subset_name, "edgeR_QL", "NOT_ESTIMABLE", note_from_error("edgeR fit failed:", ed), nrow(meta_s), length(unique(meta_s[[donor_key]])), length(unique(meta_s[[dataset_key]])))
     all_tabs[[length(all_tabs) + 1L]] <- ed
   }
 }
@@ -362,7 +389,9 @@ if (!is.null(full_fit) && !is.null(full_fit$fit)) {
   saveRDS(
     list(
       fit = full_fit$fit$fit, voom = full_fit$fit$voom, design = full_fit$design,
-      y = full_fit$y, target_gene = target, exposure = primary_exposure
+      y = full_fit$y, target_gene = target, exposure = primary_exposure,
+      consensus = full_fit$fit$consensus, blocked = isTRUE(full_fit$fit$blocked),
+      block = full_fit$fit$block
     ),
     file = fit_path
   )
@@ -372,7 +401,16 @@ result <- audit_models(gene_table, meta, cfg, subsets, lodo_names, resolve)
 audit <- result$audit
 write.csv(result$genes, file.path(tables, "gene_evidence.csv"), row.names = FALSE)
 write.csv(result$folds, file.path(tables, "fold_audit.csv"), row.names = FALSE)
-write(toJSON(audit, auto_unbox = TRUE, pretty = TRUE, null = "null"), file.path(logs, "model_audit.json"))
+runtime_packages <- c("limma", "edgeR", "Matrix", "statmod", "yaml", "jsonlite")
+audit$runtime <- list(
+  R = R.version.string,
+  packages = setNames(lapply(runtime_packages, function(p) as.character(packageVersion(p))), runtime_packages)
+)
+audit$blocking <- list(
+  blocked = isTRUE(!is.null(full_fit) && !is.null(full_fit$fit) && full_fit$fit$blocked),
+  consensus = if (is.null(full_fit) || is.null(full_fit$fit)) NA_real_ else full_fit$fit$consensus
+)
+write(toJSON(audit, auto_unbox = TRUE, pretty = TRUE, null = "null", na = "null"), file.path(logs, "model_audit.json"))
 message("wrote gene_effects.csv and model_audit.json")
 message("NOT_ESTIMABLE rows are results. Do not refit a cell Wilcoxon.")
 

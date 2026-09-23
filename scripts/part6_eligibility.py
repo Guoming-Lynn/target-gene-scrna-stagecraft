@@ -11,10 +11,17 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.io import read_identity_csv  # noqa: E402
 
 DEFAULT_GATES = {
     "KO": 5,
@@ -110,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--oe-min", type=int, default=10)
     args = parser.parse_args(argv)
     ledger, eligible = donor_eligibility(
-        pd.read_csv(args.cells),
+        read_identity_csv(args.cells),
         gates={"KO": args.ko_min, "OE": args.oe_min, "OE_SYMMETRY": args.ko_min},
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
