@@ -59,6 +59,8 @@ That is why source-block holdout exists, and why this skill treats "N donors" as
 
 ## Report shape
 
+`scripts/stage_report.py` renders this shape from `verdict.json` and `model_audit.json` without recomputing statistics.
+
 ```text
 1. One-sentence conclusion with the verdict token
 2. Reproduction anchor (if this stage subsets a parent model)

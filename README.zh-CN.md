@@ -18,6 +18,7 @@
 |---|---|
 | **AI skill** | `SKILL.md` 与 `references/` 中的 Part 1–6 完整规范 |
 | **CLI 助手** | 审阅表、图目录、Part 5/6 构造与 verdict |
+| **报告助手** | 阶段进度、报告生成、用语检查 |
 | **未捆绑** | 即开即用的 Part 1 Scanpy 跑数程序（QC、Harmony、Leiden）。请用 `scripts/part1_init.py` 加 Part 1 规范 |
 | **Part 6** | 已规定、未做成 turnkey；需要用户自备、已授权的 Geneformer 环境 |
 

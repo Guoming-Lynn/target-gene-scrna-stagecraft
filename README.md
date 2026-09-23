@@ -22,6 +22,7 @@ and forbids cell-level DEG shortcuts.
 |---|---|
 | **AI skill** | Full Part 1–6 specification in `SKILL.md` and `references/` |
 | **CLI helpers** | Review tables, figure catalogs, Part 5/6 construction and verdicts |
+| **Reporting helpers** | Stage progress, rendered reports, and claim-boundary review |
 | **Not bundled** | A turnkey Part 1 Scanpy runner (QC, Harmony, Leiden). Use `scripts/part1_init.py` plus the Part 1 spec |
 | **Part 6** | Specified and audited; not turnkey. Needs a separate licensed Geneformer environment |
 

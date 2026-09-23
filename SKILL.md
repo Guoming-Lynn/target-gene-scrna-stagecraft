@@ -400,3 +400,5 @@ Run one frozen Part 5 arm per config/stage. The R runner produces measured
 gene evidence, all source-block holdouts, and donor LOO. Project-specific
 confound diagnostics and pathway robustness must still be completed before
 claiming the entire Part 5 stage finished; see its specification.
+After verdict.json exists, render the report with scripts/stage_report.py.
+Lint drafts with scripts/claim_lint.py; findings are review flags, not a verdict.

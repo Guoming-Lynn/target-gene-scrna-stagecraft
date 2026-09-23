@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [2.3.0] - 2026-09-23
+
+### Added
+- `scripts/claim_lint.py` flags draft sentences that cross the claim boundaries. Findings are review flags unless `--strict` is set.
+- `scripts/stage_report.py` renders `06_reports/PARTN_REPORT.md` from `verdict.json` and `model_audit.json`.
+- `scripts/stage_status.py` lists completed Part 5 or Part 6 helper steps and prints the next command.
+- No statistical output or threshold changed.
+
 ## [2.2.1] - 2026-09-23
 
 ### Fixed

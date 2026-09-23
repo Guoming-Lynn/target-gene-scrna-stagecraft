@@ -1,6 +1,7 @@
 # Claim boundaries (do not write)
 
 Use this as a lint list while drafting reports and README bullets. If a sentence matches a left-hand pattern, replace it.
+Machine-readable rules live in `stagecraft/claim_rules.yaml` and are used by `scripts/claim_lint.py`. When you add a row here, add a rule with an example sentence.
 
 ## Replication and n
 

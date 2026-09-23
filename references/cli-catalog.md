@@ -74,6 +74,9 @@ python scripts/part6_verdict.py 05_logs/model_audit.json \
 python scripts/part6_figures.py donors 02_tables/donor_effects.csv \
     --out 03_figures
 python scripts/_part6_smoke.py
+python scripts/stage_status.py analysis/05_arm_a
+python scripts/stage_report.py analysis/05_arm_a
+python scripts/claim_lint.py analysis/05_arm_a/06_reports --strict
 ```
 
 Figure QA helper:

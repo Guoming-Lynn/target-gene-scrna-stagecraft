@@ -68,6 +68,7 @@ See [references/r-requirements.md](references/r-requirements.md).
 | 3 | Not estimable, or no KO-eligible cells |
 
 Exit 2 is returned by `check_environment.py`, `quickstart.py` (failed component), `project_arm_inventory.py`, `part6_smoke_gate.py`, `part6_endpoints.py` (primary coverage or a frozen-set hash mismatch), `part6_token_audit.py` (gate), `part5_eligibility.py` (no eligible units), `part6_axes.py` (too few donor axes, or skipped donors above `--max-skipped-fraction`), and `part6_sign_tests.py` (family larger than declared). Exit 3 is `part6_token_audit.py` when the ledger is not estimable. Other helpers use exit 1 for bad input.
+`claim_lint.py --strict` exits 2 on findings; `stage_report.py` exits 2 without `05_logs/verdict.json`; `stage_status.py` exits 1 only when the stage directory is missing.
 
 ## Part 6
 

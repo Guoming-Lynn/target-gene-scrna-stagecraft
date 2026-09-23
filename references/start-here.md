@@ -15,6 +15,7 @@ return to their producing stage, not substitute a cell-level test.
 | Other estimands or mechanistic extensions | Separate protocol | Parts 7/8 are not implemented here |
 
 For a new executor, first run `python quickstart.py --out new_smoke_output`.
+Inside a Part 5 or Part 6 stage, `python scripts/stage_status.py <stage>` lists completed steps and the next command.
 The [reference index](README.md) lists specs, figure contracts and runtime docs.
 Before the chosen stage run `python scripts/check_environment.py --stage partN`.
 Smoke success proves neither a working Geneformer model nor scientific validity.
