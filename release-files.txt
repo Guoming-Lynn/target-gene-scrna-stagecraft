@@ -112,6 +112,7 @@ scripts/plotting_style.py
 scripts/project_arm_inventory.py
 scripts/protocol_chronology.py
 scripts/simulation_contract.py
+scripts/stage_report.py
 scripts/validate_figure_manifest.py
 stagecraft/__init__.py
 stagecraft/claim_rules.yaml
