@@ -6,10 +6,10 @@ import zipfile
 import yaml
 
 
-def release_files(root):
+def release_files(root, manifest="release-files.txt"):
     root = Path(root).resolve()
     files = []
-    for name in (root / "release-files.txt").read_text(encoding="utf-8").splitlines():
+    for name in (root / manifest).read_text(encoding="utf-8").splitlines():
         if not name or name.startswith("#"):
             continue
         relative = Path(name)
@@ -26,9 +26,9 @@ def release_files(root):
     return files
 
 
-def package(root, output_dir=None):
+def package(root, output_dir=None, manifest="release-files.txt"):
     root = Path(root).resolve()
-    files = release_files(root)
+    files = release_files(root, manifest)
     metadata = yaml.safe_load((root / "SKILL.md").read_text(encoding="utf-8").split("---", 2)[1])
     version = metadata["metadata"]["version"]
     destination = Path(output_dir or root.parent)
@@ -59,7 +59,8 @@ def main(argv=None):
         help="Directory for the archive and SHA-256 sidecar (defaults to the repository parent).",
     )
     args = parser.parse_args(argv)
-    package(Path(__file__).resolve().parents[1], args.out_dir)
+    package(Path(__file__).resolve().parents[1], args.out_dir, manifest="skill-files.txt")
+    return 0
 
 
 if __name__ == "__main__":

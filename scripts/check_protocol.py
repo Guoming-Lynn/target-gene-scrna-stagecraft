@@ -29,12 +29,12 @@ REQUIRED_PHRASES = [
 ]
 
 
-def main(argv: list[str]) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("protocol", type=Path)
     parser.add_argument("--stage-root", type=Path, help="Verify local freeze hashes and output chronology")
     parser.add_argument("--freeze", action="store_true", help="Record a local freeze before stage artifacts exist")
-    args = parser.parse_args(argv[1:])
+    args = parser.parse_args(argv)
     if args.freeze and args.stage_root is None:
         parser.error("--freeze requires --stage-root")
     path = args.protocol
@@ -86,5 +86,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
+    raise SystemExit(main())
 

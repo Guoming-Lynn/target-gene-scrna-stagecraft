@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -32,7 +33,7 @@ try:
 except ImportError:  # pragma: no cover
     sc = None
 
-from stagecraft.io import CSV_EXCEL, require_new
+from stagecraft.io import CSV_EXCEL
 from stagecraft.numeric import nonpositive
 
 UNLIKELY_PATTERN = re.compile(
@@ -204,16 +205,17 @@ def write_pseudobulk(
     if counts.shape != (len(genes), len(meta)) or genes["gene"].eq(gene).any():
         raise SystemExit("Outcome matrix must align with genes/units and exclude TARGET_GENE.")
     out_dir.mkdir(parents=True, exist_ok=True)
-    mtx_path = out_dir / "counts.mtx"
-    meta_path = out_dir / "metadata.csv"
-    genes_path = out_dir / "genes.csv"
-    audit_path = out_dir / "pseudobulk_audit.json"
-    for path in (mtx_path, meta_path, genes_path, audit_path):
-        require_new(path)
-
-    mmwrite(mtx_path, counts)
-    meta.to_csv(meta_path, index=False, encoding=CSV_EXCEL)
-    genes.to_csv(genes_path, index=False, encoding=CSV_EXCEL)
+    names = ("counts.mtx", "metadata.csv", "genes.csv", "pseudobulk_audit.json")
+    finals = [out_dir / name for name in names]
+    partials = [
+        out_dir / "counts.partial.mtx",
+        out_dir / "metadata.partial.csv",
+        out_dir / "genes.partial.csv",
+        out_dir / "pseudobulk_audit.partial.json",
+    ]
+    for path in (*finals, *partials):
+        if path.exists():
+            raise SystemExit(f"Refusing to overwrite: {path}")
     audit = {
         "target_gene": gene,
         "n_genes": int(counts.shape[0]),
@@ -223,7 +225,17 @@ def write_pseudobulk(
         "outcome_gene_manifest": "genes.csv",
         "layer": "counts",
     }
-    audit_path.write_text(json.dumps(audit, indent=2), encoding="utf-8")
+    try:
+        mmwrite(partials[0], counts)
+        meta.to_csv(partials[1], index=False, encoding=CSV_EXCEL)
+        genes.to_csv(partials[2], index=False, encoding=CSV_EXCEL)
+        partials[3].write_text(json.dumps(audit, indent=2), encoding="utf-8")
+        for partial, final in zip(partials, finals):
+            os.rename(partial, final)
+    except BaseException:
+        for partial in partials:
+            partial.unlink(missing_ok=True)
+        raise
 
 
 def main(argv: list[str] | None = None) -> int:

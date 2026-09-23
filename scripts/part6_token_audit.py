@@ -23,6 +23,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from stagecraft import EXIT_GATE, EXIT_NOT_ESTIMABLE, EXIT_OK  # noqa: E402
 from stagecraft.io import read_identity_csv  # noqa: E402
 
 ILLEGAL = "ILLEGAL_MISMATCH"
@@ -131,11 +132,11 @@ def main(argv: list[str] | None = None) -> int:
     print(stats)
     if stats["n_illegal"]:
         print("ILLEGAL token mismatch - chapter STOPPED")
-        return 2
+        return EXIT_GATE
     if stats["n_ko_eligible"] == 0:
         print("TOKEN_UNOBSERVABLE - no KO-eligible cell")
-        return 3
-    return 0
+        return EXIT_NOT_ESTIMABLE
+    return EXIT_OK
 
 
 if __name__ == "__main__":

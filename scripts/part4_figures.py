@@ -88,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"unit table missing {source_key}")
     table = identifiability_table(units, args.group, source_key=source_key, min_cells=args.min_cells)
     ident_csv = out / "source_data" / "identifiability.csv"
+    if ident_csv.exists():
+        raise SystemExit(f"Refusing to overwrite: {ident_csv}")
     table.to_csv(ident_csv, index=False, encoding="utf-8-sig")
     apply_publication_style(config)
     plot_identifiability(

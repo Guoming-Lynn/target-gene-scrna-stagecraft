@@ -7,6 +7,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
+
 # part1/part3 clustering extras are in requirements-part1.txt, not the base install.
 PROFILES = {
     'smoke': ['numpy', 'pandas', 'scipy', 'anndata', 'yaml'],
@@ -51,7 +57,7 @@ def main(argv=None):
         results['model_files'] = dict(status='PASS' if valid else 'FAILED', detail='Model load, revision/hash and official parity gates remain required before inference')
     passed = all(row['status'] == 'PASS' for row in results.values())
     print(json.dumps(dict(stage=args.stage, status='PASS' if passed else 'FAILED', results=results), indent=2), flush=True)
-    return 0 if passed else 2
+    return EXIT_OK if passed else EXIT_GATE
 
 if __name__ == '__main__':
     raise SystemExit(main())

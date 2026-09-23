@@ -7,6 +7,8 @@ python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
+`pip install -e .` installs the shared `stagecraft` package. Helper commands stay `python scripts/...`; this install does not put them on `PATH`. Python is capped below 3.12 because that is the validated range for the pinned Scanpy and AnnData stack.
+
 CI runs those Python versions on Linux, macOS, and Windows.
 
 - Runtime: `requirements.txt` (numpy, pandas, scipy, PyYAML, anndata, scanpy, matplotlib, seaborn).

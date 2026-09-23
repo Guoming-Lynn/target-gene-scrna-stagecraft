@@ -6,9 +6,16 @@ or proof that no undeclared analysis was conducted elsewhere.
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import yaml
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
 
 
 def inventory(manifest_path):
@@ -49,17 +56,17 @@ def inventory(manifest_path):
             "manifest_sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "arms": records}
 
 
-def main():
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--out", type=Path, required=True)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     report = inventory(args.manifest)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("x", encoding="utf-8") as stream:
         json.dump(report, stream, indent=2)
     print(report["status"])
-    return 0 if report["status"] == "COMPLETE_DECLARED_INVENTORY" else 2
+    return EXIT_OK if report["status"] == "COMPLETE_DECLARED_INVENTORY" else EXIT_GATE
 
 
 if __name__ == "__main__":

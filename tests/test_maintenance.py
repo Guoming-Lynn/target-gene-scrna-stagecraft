@@ -73,7 +73,7 @@ class Maintenance(unittest.TestCase):
             manifest = folder / "inputs.json"
             manifest.write_text('{}')
             self.assertEqual(hashes.manifest_root(manifest), root.resolve())
-            self.assertEqual(hashes.main(["hash_inputs", str(manifest)]), 1)
+            self.assertEqual(hashes.main([str(manifest)]), 1)
 
     def test_protocol_requires_headings_and_bodies(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -83,10 +83,10 @@ class Maintenance(unittest.TestCase):
             valid = "\n".join(f"## {heading}\n{body}" for heading in sections)
             valid += "\nEvidence ceiling exploratory. Forbidden sentences. Upstream is read-only. NOT_ESTIMABLE."
             path.write_text(valid)
-            self.assertEqual(protocol.main(["check_protocol", str(path)]), 0)
+            self.assertEqual(protocol.main([str(path)]), 0)
             for invalid in (valid.replace("## ", ""), valid.replace("## Model\n" + body, "## Model\n"), "short"):
                 path.write_text(invalid)
-                self.assertEqual(protocol.main(["check_protocol", str(path)]), 1)
+                self.assertEqual(protocol.main([str(path)]), 1)
 
     def test_cluster_qc_donors_and_strict_marker_filter(self):
         obj = self.fixture()

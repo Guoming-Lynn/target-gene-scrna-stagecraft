@@ -100,11 +100,11 @@ def verify_entries(obj, root: Path) -> list[dict]:
     return results
 
 
-def main(argv: list[str]) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--verify", action="store_true", help="Require and compare explicit frozen SHA-256 entries")
-    args = parser.parse_args(argv[1:])
+    args = parser.parse_args(argv)
     manifest = args.manifest
     obj = load(manifest)
     if args.verify:
@@ -144,5 +144,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
+    raise SystemExit(main())
 

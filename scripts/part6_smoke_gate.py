@@ -15,9 +15,16 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 from pathlib import Path
 
 import pandas as pd
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
 
 DEFAULT_COSINE = 1e-5
 DEFAULT_DETERMINISM = 1e-6
@@ -108,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"Refusing to overwrite: {args.out}")
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(text + "\n", encoding="utf-8")
-    return 0 if verdict["pass"] else 2
+    return EXIT_OK if verdict["pass"] else EXIT_GATE
 
 
 if __name__ == "__main__":

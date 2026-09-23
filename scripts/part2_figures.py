@@ -807,8 +807,11 @@ def render_catalog(
     tables.mkdir(exist_ok=True)
     group_summary = summarize_groups(adata, gene, group_key, donor_key=donor_key, dataset_key=dataset_key)
     units = summarize_units(adata, gene, group_key, donor_key=donor_key, dataset_key=dataset_key, min_cells=min_cells)
-    group_csv = tables / "group_summary.csv"
-    unit_csv = tables / "unit_summary.csv"
+    group_csv = tables / f"{stem_prefix}_group_summary.csv"
+    unit_csv = tables / f"{stem_prefix}_unit_summary.csv"
+    for path in (group_csv, unit_csv):
+        if path.exists():
+            raise SystemExit(f"Refusing to overwrite: {path}")
     group_summary.to_csv(group_csv, index=False)
     units.to_csv(unit_csv, index=False)
     cell_count_order = group_summary.sort_values("n_cells", ascending=False)[group_key].astype(str).tolist()
@@ -850,7 +853,10 @@ def render_catalog(
     unit_col = "dataset_donor_id" if "dataset_donor_id" in units.columns else str(units.columns[0])
     plot_unit_heatmap(units, group_key, unit_col, config, output_stem=stem["12"])
     lodo = leave_one_dataset_out(group_summary, units, group_key, dataset_key=dataset_key)
-    lodo.to_csv(tables / "lodo.csv", index=False)
+    lodo_csv = tables / "lodo.csv"
+    if lodo_csv.exists():
+        raise SystemExit(f"Refusing to overwrite: {lodo_csv}")
+    lodo.to_csv(lodo_csv, index=False)
     if lodo["held_out_dataset"].nunique() >= 2:
         plot_lodo_heatmap(lodo, group_key, config, output_stem=stem["13"])
     plot_depth(units.loc[units["eligible"]], group_key, gene, colors, config, output_stem=stem["14"])

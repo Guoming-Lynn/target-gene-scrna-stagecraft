@@ -7,11 +7,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 
-def main():
+from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--timeout', type=float, default=300)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=False)
     commands = [
         ('environment', ['scripts/check_environment.py', '--stage', 'smoke']),
@@ -37,7 +40,7 @@ def main():
     passed = len(results) == len(commands) and all(r['status'] == 'PASS' for r in results)
     report = dict(status='PASS' if passed else 'FAILED', formal_analysis=False, results=results)
     (args.out / 'quickstart_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
-    return 0 if passed else 2
+    return EXIT_OK if passed else EXIT_GATE
 
 if __name__ == '__main__':
     raise SystemExit(main())

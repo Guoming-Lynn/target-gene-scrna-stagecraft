@@ -107,6 +107,16 @@ class ReleaseSafety(unittest.TestCase):
         self.assertIn(ROOT / 'scripts/part6_verdict.py', files)
         self.assertIn(ROOT / 'stagecraft/__init__.py', files)
         self.assertIn(ROOT / 'scripts/demo_toy_run.py', files)
+        skill = package_skill.release_files(ROOT, "skill-files.txt")
+        self.assertTrue(all(".github" not in path.as_posix() for path in skill))
+        self.assertIn(ROOT / "SKILL.md", skill)
+        import subprocess
+        tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
+        listed = [
+            line for line in (ROOT / "release-files.txt").read_text(encoding="utf-8").splitlines()
+            if line and not line.startswith("#")
+        ]
+        self.assertEqual(sorted(tracked), sorted(listed))
 
     def test_packager_accepts_an_explicit_output_directory(self):
         with tempfile.TemporaryDirectory() as tmp:

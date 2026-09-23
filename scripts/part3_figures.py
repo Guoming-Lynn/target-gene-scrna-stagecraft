@@ -115,6 +115,8 @@ def _source_dir(out_dir: Path) -> Path:
 
 def write_source(frame: pd.DataFrame, out_dir: Path, stem: str) -> Path:
     path = _source_dir(out_dir) / f"{stem}.csv"
+    if path.exists():
+        raise SystemExit(f"Refusing to overwrite: {path}")
     frame.to_csv(path, index=False, encoding="utf-8-sig")
     return path
 

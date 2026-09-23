@@ -128,7 +128,7 @@ def test_loo_excludes_held_out() -> None:
         }
     )
     scores = pd.Series(np.tile(np.linspace(0, 1, n_per), n_donors))
-    loo = build_axes(cls, cells, scores, min_cells=10, min_side=3, min_training=10)
+    loo, _skipped = build_axes(cls, cells, scores, min_cells=10, min_side=3, min_training=10)
     own = {}
     donors = cells["dataset_donor_id"].to_numpy()
     for donor in sorted(set(donors)):

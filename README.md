@@ -63,6 +63,8 @@ python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
+Editable install provides the `stagecraft` helpers. Run CLIs as `python scripts/...`. Python stays on 3.10 or 3.11.
+
 Part 5 additionally needs R with `Matrix`, `limma`, `edgeR`, `fgsea`,
 `statmod`, `jsonlite`, `yaml`, and `digest`. See [INSTALL.md](INSTALL.md)
 and [R packages](references/r-requirements.md).

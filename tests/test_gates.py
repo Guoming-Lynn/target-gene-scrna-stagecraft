@@ -19,3 +19,19 @@ class GateTests(unittest.TestCase):
         table = pd.DataFrame({"perturbation": ["KO"], "max_abs_cosine_diff": [1e-7], "max_abs_embedding_rerun_diff": [1e-7]})
         self.assertTrue(judge_smoke(table, perturbations=["KO"])["pass"])
 
+    def test_smoke_rejects_values_above_the_freeze(self):
+        table = pd.DataFrame({
+            "perturbation": ["KO"],
+            "max_abs_cosine_diff": [1e-4],
+            "max_abs_embedding_rerun_diff": [1e-7],
+        })
+        self.assertFalse(judge_smoke(table, perturbations=["KO"])["pass"])
+
+    def test_smoke_rejects_missing_declared_perturbation(self):
+        table = pd.DataFrame({
+            "perturbation": ["KO"],
+            "max_abs_cosine_diff": [1e-7],
+            "max_abs_embedding_rerun_diff": [1e-7],
+        })
+        self.assertFalse(judge_smoke(table, perturbations=["KO", "OE"])["pass"])
+

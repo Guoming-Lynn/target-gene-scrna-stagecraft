@@ -143,11 +143,13 @@ def main(argv: list[str] | None = None) -> int:
     selected, candidates, window = select_controls(
         read_identity_csv(args.genes), target=args.target, endpoint_union=union, excluded_genes=excluded, max_n=args.max_n
     )
+    sidecar = args.out.with_name("control_candidates.csv")
+    for path in (args.out, sidecar):
+        if path.exists():
+            raise SystemExit(f"Refusing to overwrite: {path}")
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    if args.out.exists():
-        raise SystemExit(f"Refusing to overwrite: {args.out}")
     selected.to_csv(args.out, index=False)
-    candidates.to_csv(args.out.with_name("control_candidates.csv"), index=False)
+    candidates.to_csv(sidecar, index=False)
     print(f"n_controls={len(selected)} window={window}")
     if len(selected) < 5:
         print("control ranks are NOT_ESTIMABLE (<5)")

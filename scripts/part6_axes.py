@@ -13,6 +13,7 @@ Usage (after original CLS is cached):
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -107,12 +108,14 @@ def build_axes(
     cells = cells.reset_index(drop=True)
     scores = pd.Series(np.asarray(scores), index=cells.index)
     donor_axes: dict[str, np.ndarray] = {}
+    skipped: list[dict[str, str]] = []
     donors = cells["dataset_donor_id"].astype(str).to_numpy()
     cell_ids = cells["cell_id"].to_numpy()
     score_values = scores.to_numpy()
     for donor in sorted(set(donors)):
         index = np.flatnonzero(donors == donor)
         if len(index) < min_cells:
+            skipped.append({"donor": str(donor), "reason": "too_few_cells"})
             continue
         try:
             top, bottom = top_bottom_indices(
@@ -121,18 +124,22 @@ def build_axes(
                 quartile=quartile,
                 min_side=min_side,
             )
-        except ValueError:
+        except ValueError as exc:
+            skipped.append({"donor": str(donor), "reason": str(exc)})
             continue
         try:
             donor_axes[str(donor)] = donor_axis(cls[index], top, bottom)
-        except ValueError:
+        except ValueError as exc:
+            skipped.append({"donor": str(donor), "reason": str(exc)})
             continue
     if len(donor_axes) < min_training + 1:
-        raise SystemExit(f"need ≥{min_training + 1} valid donor axes, got {len(donor_axes)}")
+        raise SystemExit(
+            f"need ≥{min_training + 1} valid donor axes, got {len(donor_axes)}; skipped {len(skipped)}"
+        )
     loo = {donor: loo_axis(donor_axes, donor) for donor in donor_axes}
     for donor, axis in loo.items():
         assert_no_self_leakage(donor_axes, donor, axis)
-    return loo
+    return loo, skipped
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -155,12 +162,15 @@ def main(argv: list[str] | None = None) -> int:
     if set(cells["cell_id"]) != set(score_table["cell_id"]):
         raise SystemExit("Score and CLS cell identities must match exactly.")
     score_table = cells[["cell_id"]].merge(score_table, on="cell_id", how="left", validate="one_to_one")
-    loo = build_axes(cls, cells, score_table[col])
+    loo, skipped = build_axes(cls, cells, score_table[col])
+    skipped_path = args.out.with_suffix(".skipped.json")
+    for path in (args.out, skipped_path):
+        if path.exists():
+            raise SystemExit(f"Refusing to overwrite: {path}")
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    if args.out.exists():
-        raise SystemExit(f"Refusing to overwrite: {args.out}")
     np.savez(args.out, **{key: value for key, value in loo.items()})
-    print(f"n_loo_axes={len(loo)} wrote {args.out}")
+    skipped_path.write_text(json.dumps(skipped, indent=2) + "\n", encoding="utf-8")
+    print(f"n_loo_axes={len(loo)} skipped={len(skipped)} wrote {args.out}")
     return 0
 
 

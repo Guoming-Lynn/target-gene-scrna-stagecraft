@@ -24,6 +24,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
 from stagecraft.hashing import sha256_file
 from stagecraft.io import load_yaml, require_new
 
@@ -153,9 +154,9 @@ def main(argv: list[str] | None = None) -> int:
     pd.DataFrame(long_rows).to_csv(members_out, index=False)
     if primary_blocked(table):
         print("PRIMARY COVERAGE FAILED - chapter STOPPED")
-        return 2
+        return EXIT_GATE
     print(f"wrote {args.out}")
-    return 0
+    return EXIT_OK
 
 
 if __name__ == "__main__":

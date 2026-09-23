@@ -82,12 +82,12 @@ def main(argv: list[str] | None = None) -> int:
         child.obs[args.child_key],
     )
     counts = counts.sort_values(["parent_cluster", "child_cluster"], key=_sort_id)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    if args.out.exists():
-        raise SystemExit(f"Refusing to overwrite: {args.out}")
-    counts.to_csv(args.out, index=False, encoding="utf-8-sig")
-
     orphan = args.out.with_name(args.out.stem + "_barcode_orphans.csv")
+    for path in (args.out, orphan):
+        if path.exists():
+            raise SystemExit(f"Refusing to overwrite: {path}")
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    counts.to_csv(args.out, index=False, encoding="utf-8-sig")
     pd.DataFrame(
         {
             "barcode": only_parent + only_child,

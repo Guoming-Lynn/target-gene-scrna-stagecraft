@@ -160,7 +160,8 @@ class DataConstruction(unittest.TestCase):
         cells = pd.DataFrame({"cell_id": [f"c{i}" for i in range(8)], "dataset_donor_id": ["A"]*2 + ["B"]*2 + ["C"]*4})
         cls = np.array([[-1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, -1], [0, 1], [0, 1]], float)
         scores = pd.Series([0, 1, 0, 1, 0, 0, 1, 1])
-        result = axes.build_axes(cls, cells, scores, min_side=1, min_cells=2, min_training=2)
+        result, skipped = axes.build_axes(cls, cells, scores, min_side=1, min_cells=2, min_training=2)
+        self.assertEqual(skipped, [])
         np.testing.assert_allclose(result["A"], [1/np.sqrt(2)]*2)
         cells.loc[1, "cell_id"] = "c0"
         with self.assertRaises(SystemExit):

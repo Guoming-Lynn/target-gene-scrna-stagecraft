@@ -55,3 +55,9 @@ jobs:
           cache-version: 1
       - run: Rscript --vanilla tests/audit_boundaries.R
       - run: Rscript --vanilla tests/scientific_regression.R
+      - name: Part 5 null calibration smoke
+        run: Rscript --vanilla scripts/calibrate_part5_null.R "$RUNNER_TEMP/part5_null_smoke" 1 7 subtype_specific 8 2 100
+        if: runner.os != 'Windows'
+      - name: Part 5 null calibration smoke
+        run: Rscript --vanilla scripts/calibrate_part5_null.R "$env:RUNNER_TEMP\part5_null_smoke" 1 7 subtype_specific 8 2 100
+        if: runner.os == 'Windows'

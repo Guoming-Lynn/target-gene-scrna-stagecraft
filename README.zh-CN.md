@@ -49,6 +49,16 @@ python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
+`pip install -e .` 只安装共享包 `stagecraft`。命令仍用 `python scripts/...`，不会进入 PATH。Python 停在 3.10 或 3.11，与已验证的 Scanpy / AnnData 范围一致。
+
+正式运行前把 `environment.example.yaml` 抄进阶段目录并替换占位符。科学有效性、图契约和细胞级探索的边界见英文 README 的 Validation 一节：细胞级结果不能进入正式 verdict，`simulation_contract.py` 只写 manifest。
+
+| Agent | 路径 |
+|---|---|
+| Codex | `~/.agents/skills/target-gene-scrna-stagecraft/` |
+| Cursor | `~/.cursor/skills/target-gene-scrna-stagecraft/` |
+| Claude Code | `~/.claude/skills/target-gene-scrna-stagecraft/` |
+
 测试与 lint 另装 `requirements-dev.txt`。Part 5 还需要 R，以及 `Matrix`、`limma`、`edgeR`、`fgsea`、`statmod`、`jsonlite`、`yaml` 和 `digest`。Part 6 需要另建 Geneformer 环境。详细说明见 [INSTALL.md](INSTALL.md) 和 [R 依赖](references/r-requirements.md)。
 
 解释器选择与 Windows Conda 注意项也在 INSTALL.md。维护者基线见 [validated-environment.md](references/validated-environment.md)；CI 同时覆盖 Linux 与 macOS。
@@ -87,7 +97,7 @@ Rscript --vanilla tests/scientific_regression.R
 python scripts/package_skill.py --out-dir release
 ```
 
-发布包严格按照 `release-files.txt` 生成。发布前请核对同目录下的 `.sha256.txt` 文件。
+发布包由 `skill-files.txt` 生成，不含 `.github/`。完整仓库清单仍是 `release-files.txt`。发布前请核对同目录下的 `.sha256.txt` 文件。
 
 ## 引用、维护者、许可证
 
