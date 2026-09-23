@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [2.2.0] - 2026-09-23
 
 ### Fixed
 - Blocked Part 5 fits re-estimate `duplicateCorrelation` after the second voom and pass that consensus into CAMERA.

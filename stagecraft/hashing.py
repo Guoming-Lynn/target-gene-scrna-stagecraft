@@ -5,8 +5,6 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from stagecraft.io import CSV_MACHINE
-
 PathLike = str | Path
 
 
@@ -22,7 +20,3 @@ def sha256_file(path: PathLike, block_size: int = 2**20) -> str:
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
-
-
-# Imported for callers that previously mixed encoding constants with hashing.
-UTF8 = CSV_MACHINE
