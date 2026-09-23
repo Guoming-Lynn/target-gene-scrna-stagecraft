@@ -113,6 +113,7 @@ scripts/project_arm_inventory.py
 scripts/protocol_chronology.py
 scripts/simulation_contract.py
 scripts/stage_report.py
+scripts/stage_status.py
 scripts/validate_figure_manifest.py
 stagecraft/__init__.py
 stagecraft/claim_rules.yaml
@@ -136,3 +137,4 @@ tests/test_release_safety.py
 tests/test_review_boundaries.py
 tests/test_scientific_contract.py
 tests/test_stage_handoffs.py
+tests/test_stage_tools.py
