@@ -11,7 +11,7 @@ description: >-
   分室重聚类, 供体关联, 伪批量, limma, LODO, Geneformer, and virtual KO.
 license: MIT
 metadata:
-  version: "2.2.1"
+  version: "2.3.0"
   scope: "Parts 1–5 main path; Part 6 separately specified Geneformer branch."
 ---
 
