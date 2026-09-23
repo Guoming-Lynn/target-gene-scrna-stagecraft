@@ -1,6 +1,6 @@
 # target-gene-scrna-stagecraft
 
-[中文说明](README.zh-CN.md) · English · v2.3.0
+[中文说明](README.zh-CN.md) · English · v2.3.1
 
 [![CI](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
