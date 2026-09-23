@@ -115,7 +115,10 @@ stagecraft/__init__.py
 stagecraft/hashing.py
 stagecraft/io.py
 stagecraft/numeric.py
+stagecraft/patterns.py
+stagecraft/unlikely_arm_pattern.txt
 tests/audit_boundaries.R
+tests/pathway_contract.R
 tests/run_r_integration.py
 tests/scientific_regression.R
 tests/test_data_construction.py

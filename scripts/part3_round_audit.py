@@ -13,9 +13,16 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import pandas as pd
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.io import CSV_EXCEL  # noqa: E402
 
 try:
     import scanpy as sc
@@ -87,13 +94,13 @@ def main(argv: list[str] | None = None) -> int:
         if path.exists():
             raise SystemExit(f"Refusing to overwrite: {path}")
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    counts.to_csv(args.out, index=False, encoding="utf-8-sig")
+    counts.to_csv(args.out, index=False, encoding=CSV_EXCEL)
     pd.DataFrame(
         {
             "barcode": only_parent + only_child,
             "where": (["parent_only"] * len(only_parent)) + (["child_only"] * len(only_child)),
         }
-    ).to_csv(orphan, index=False, encoding="utf-8-sig")
+    ).to_csv(orphan, index=False, encoding=CSV_EXCEL)
     print(
         f"wrote {args.out} ({len(counts)} parent×child cells; "
         f"{len(only_parent)} parent-only barcodes, {len(only_child)} child-only)"

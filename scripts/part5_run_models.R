@@ -16,6 +16,10 @@ suppressPackageStartupMessages({
 options(stringsAsFactors = FALSE)
 file_arg <- commandArgs()[grepl("^--file=", commandArgs())]
 script_dir <- if (length(file_arg)) dirname(sub("^--file=", "", file_arg[[1]])) else "scripts"
+unlikely_arm <- readLines(
+  file.path(normalizePath(file.path(script_dir, ".."), winslash = "/"), "stagecraft", "unlikely_arm_pattern.txt"),
+  warn = FALSE
+)[[1]]
 source(file.path(script_dir, "part5_model_audit.R"))
 source(file.path(script_dir, "design_diagnostics.R"))
 
@@ -115,7 +119,7 @@ if (length(cfg$arms) != 1L) stop("Run exactly one frozen arm per stage/config")
 labels <- unlist(cfg$arms[[1]]$labels)
 group_key <- cfg$obs$group_key
 keep_arm <- if (length(labels)) meta[[group_key]] %in% labels else
-  !grepl("unresolved|stressed|doublet|debris|contaminant|low[ _-]?qc", meta[[group_key]], ignore.case = TRUE)
+  !grepl(unlikely_arm, meta[[group_key]], ignore.case = TRUE)
 meta <- meta[keep_arm, , drop = FALSE]
 counts <- counts[, keep_arm, drop = FALSE]
 if (!nrow(meta)) stop("No eligible units in the frozen arm")

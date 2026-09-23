@@ -34,12 +34,10 @@ except ImportError:  # pragma: no cover
     sc = None
 
 from stagecraft.io import CSV_EXCEL
+from stagecraft.patterns import unlikely_arm_pattern
 from stagecraft.numeric import nonpositive
 
-UNLIKELY_PATTERN = re.compile(
-    r"unresolved|stressed|doublet|debris|contaminant|low[\s_-]?qc",
-    re.I,
-)
+UNLIKELY_PATTERN = re.compile(unlikely_arm_pattern(), re.I)
 
 
 def counts_csr(adata):

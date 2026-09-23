@@ -44,10 +44,6 @@ EMBEDDING_UNS = {"neighbors", "pca", "umap", "harmony", "paga"}
 DROP_OBS_PREFIXES = ("leiden",)
 
 
-def _sha256(path: Path) -> str:
-    return sha256_file(path)
-
-
 def normalize_decision(value: object) -> str:
     text = str(value).strip().upper()
     key = text.lower()
@@ -261,7 +257,7 @@ def main(argv: list[str] | None = None) -> int:
         "parent_clustered": str(args.parent_clustered.resolve()),
         "leiden_key": args.leiden_key,
         "decision_file": str(args.decision.resolve()),
-        "decision_file_sha256": _sha256(args.decision),
+        "decision_file_sha256": sha256_file(args.decision),
         "removed_h5ad": str(removed_path.resolve()),
         "child_raw": str(child_path.resolve()),
         "n_parent": int(raw.n_obs),

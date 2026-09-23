@@ -4,7 +4,6 @@ An inventory is a disclosure check, not a project-level multiplicity correction
 or proof that no undeclared analysis was conducted elsewhere.
 """
 import argparse
-import hashlib
 import json
 import sys
 from pathlib import Path
@@ -16,6 +15,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
+from stagecraft.hashing import sha256_bytes, sha256_file  # noqa: E402
 
 
 def inventory(manifest_path):
@@ -46,14 +46,14 @@ def inventory(manifest_path):
             token = result.get("verdict")
             if result["status"] == "SUCCESS" and (not isinstance(token, str) or not token.strip()):
                 raise ValueError("Successful verdict file needs a verdict token")
-            row.update(status=result["status"], verdict=token, sha256=hashlib.sha256(data).hexdigest())
+            row.update(status=result["status"], verdict=token, sha256=sha256_bytes(data))
         records.append(row)
     return {"status": "COMPLETE_DECLARED_INVENTORY" if all(r["status"] != "MISSING_RESULT" for r in records)
             else "INCOMPLETE_DECLARED_INVENTORY", "n_declared_arms": len(records),
             "n_results_present": sum(r["status"] != "MISSING_RESULT" for r in records),
             "n_frozen_pass": sum(str(r["verdict"]).startswith("FROZEN_PASS") for r in records),
             "project_multiplicity_control": "NOT_ESTABLISHED", "undeclared_arms": "NOT_DETECTABLE",
-            "manifest_sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "arms": records}
+            "manifest_sha256": sha256_file(path), "arms": records}
 
 
 def main(argv: list[str] | None = None) -> int:

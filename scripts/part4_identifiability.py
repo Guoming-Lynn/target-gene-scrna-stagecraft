@@ -33,7 +33,8 @@ from plotting_style import (  # noqa: E402
     load_plotting_config,
     save_figure,
 )
-from stagecraft.io import read_identity_csv  # noqa: E402
+from stagecraft.io import CSV_EXCEL, read_identity_csv  # noqa: E402
+from stagecraft.patterns import unlikely_arm_pattern  # noqa: E402
 
 FLAG_COLORS = {
     "RANGE_OK": "#009E73",
@@ -44,7 +45,7 @@ FLAG_COLORS = {
 }
 
 UNLIKELY_PATTERN = re.compile(
-    r"unresolved|stressed|doublet|debris|contaminant|low[\s_-]?qc",
+    unlikely_arm_pattern(),
     re.I,
 )
 
@@ -299,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
     csv_path = args.out / "identifiability.csv"
     if csv_path.exists():
         raise SystemExit(f"Refusing to overwrite: {csv_path}")
-    table.to_csv(csv_path, index=False, encoding="utf-8-sig")
+    table.to_csv(csv_path, index=False, encoding=CSV_EXCEL)
     if not args.no_plot:
         config = load_plotting_config(args.config)
         apply_publication_style(config)

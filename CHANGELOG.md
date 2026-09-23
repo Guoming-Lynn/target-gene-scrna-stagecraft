@@ -10,12 +10,14 @@ All notable changes to this project are documented here.
 - `model_audit.json` records R and package versions. `part5_verdict.py` reports a local freeze receipt when one is present.
 - Identity columns stay strings, boolean gates reject non `true`/`false`/`1`/`0` values, and multi-file outputs refuse every sidecar before writing.
 - Skipped Part 6 donor axes are written beside the axis archive.
+- Python and the Part 5 R engine share one unlikely-arm pattern file.
 
 ### Changed
 - Dev checks pin ruff 0.16.8.
 - Dependabot skips `references/part6-requirements.txt`. Those pins are a historical Geneformer candidate, not the helper runtime.
 - The skill archive uses `skill-files.txt` and omits `.github/`.
 - CLI exit codes 2 and 3 use the shared `EXIT_GATE` and `EXIT_NOT_ESTIMABLE` constants.
+- Linux Python 3.11 CI reports `stagecraft` coverage and builds a wheel. The R job runs a pathway contract.
 
 ## [2.1.1] - 2026-09-21
 

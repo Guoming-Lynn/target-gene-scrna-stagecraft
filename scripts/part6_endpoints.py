@@ -29,10 +29,6 @@ from stagecraft.hashing import sha256_file
 from stagecraft.io import load_yaml, require_new
 
 
-def sha256_text(path: Path) -> str:
-    return sha256_file(path)
-
-
 def read_members(path: Path) -> list[str]:
     genes: list[str] = []
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -97,7 +93,7 @@ def evaluate_sets(
     for spec in specs:
         path = Path(str(spec["path"]))
         members = read_members(path)
-        digest = sha256_text(path)
+        digest = sha256_file(path)
         expected = str(spec.get("sha256") or "").strip()
         if expected and expected.lower() != "replace" and digest != expected:
             raise SystemExit(f"hash mismatch for {path}: {digest} != {expected}")

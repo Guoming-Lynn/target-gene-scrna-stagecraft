@@ -12,9 +12,16 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import pandas as pd
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.io import CSV_EXCEL  # noqa: E402
 
 
 def _cluster_column(frame: pd.DataFrame) -> str:
@@ -67,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     if args.out.exists():
         raise SystemExit(f"Refusing to overwrite existing decision template: {args.out}")
-    template.to_csv(args.out, index=False, encoding="utf-8-sig")
+    template.to_csv(args.out, index=False, encoding=CSV_EXCEL)
     print(f"wrote blank KEEP/DELETE template ({len(template)} clusters): {args.out}")
     return 0
 

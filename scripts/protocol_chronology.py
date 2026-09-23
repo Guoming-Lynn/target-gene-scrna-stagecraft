@@ -13,10 +13,6 @@ if str(_ROOT) not in sys.path:
 from stagecraft.hashing import sha256_file
 
 
-def sha256(path):
-    return sha256_file(path)
-
-
 def check_chronology(protocol, stage_root, freeze=False):
     protocol, root = Path(protocol).resolve(), Path(stage_root).resolve()
     manifest = root / "00_protocol_manifest"
@@ -32,7 +28,7 @@ def check_chronology(protocol, stage_root, freeze=False):
         manifest.mkdir(parents=True, exist_ok=True)
         inputs = set(p for p in manifest.rglob("*") if p.is_file()) | {protocol}
         payload = {"frozen_at_ns": time.time_ns(), "evidence_class": "LOCAL_CLOCK_ONLY",
-                   "files": {p.relative_to(root).as_posix(): sha256(p) for p in sorted(inputs)}}
+                   "files": {p.relative_to(root).as_posix(): sha256_file(p) for p in sorted(inputs)}}
         with receipt.open("x", encoding="utf-8") as stream:
             json.dump(payload, stream, indent=2)
         return "LOCAL_FREEZE_RECORDED_NOT_TRUSTED_PREREGISTRATION"
@@ -49,7 +45,7 @@ def check_chronology(protocol, stage_root, freeze=False):
     for name, expected in entries.items():
         path = (root / name).resolve()
         path.relative_to(root)
-        if not path.is_file() or sha256(path) != expected:
+        if not path.is_file() or sha256_file(path) != expected:
             raise ValueError("Frozen input changed: " + name)
     frozen_at = payload["frozen_at_ns"]
     if frozen_at > time.time_ns():

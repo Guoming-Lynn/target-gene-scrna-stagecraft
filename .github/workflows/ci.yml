@@ -28,6 +28,12 @@ jobs:
       - run: python -m pip install -e . -r requirements.txt -r requirements-dev.txt
       - run: ruff check .
       - run: pytest -q tests
+      - name: Coverage and wheel build
+        if: runner.os == 'Linux' && matrix.python-version == '3.11'
+        run: |
+          python -m pip install pytest-cov build
+          python -m pytest -q tests --cov=stagecraft --cov-report=term-missing
+          python -m build --outdir "$RUNNER_TEMP/dist"
       - run: python quickstart.py --out quickstart_output
   r-engine:
     strategy:
@@ -55,6 +61,7 @@ jobs:
           cache-version: 1
       - run: Rscript --vanilla tests/audit_boundaries.R
       - run: Rscript --vanilla tests/scientific_regression.R
+      - run: Rscript --vanilla tests/pathway_contract.R
       - name: Part 5 null calibration smoke
         run: Rscript --vanilla scripts/calibrate_part5_null.R "$RUNNER_TEMP/part5_null_smoke" 1 7 subtype_specific 8 2 100
         if: runner.os != 'Windows'

@@ -16,11 +16,14 @@ from pathlib import Path
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
+_ROOT = SCRIPT_DIR.parent
+for _path in (str(_ROOT), str(SCRIPT_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from part2_figures import render_catalog  # noqa: E402
 from part4_identifiability import identifiability_table, plot_identifiability  # noqa: E402
+from stagecraft.io import CSV_EXCEL  # noqa: E402
 from plotting_style import apply_publication_style, load_color_map, load_plotting_config  # noqa: E402
 
 try:
@@ -90,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     ident_csv = out / "source_data" / "identifiability.csv"
     if ident_csv.exists():
         raise SystemExit(f"Refusing to overwrite: {ident_csv}")
-    table.to_csv(ident_csv, index=False, encoding="utf-8-sig")
+    table.to_csv(ident_csv, index=False, encoding=CSV_EXCEL)
     apply_publication_style(config)
     plot_identifiability(
         table,

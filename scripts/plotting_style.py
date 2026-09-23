@@ -11,7 +11,6 @@ import json
 import platform
 import sys
 from datetime import datetime, timezone
-from functools import lru_cache
 from pathlib import Path
 from textwrap import fill
 from typing import Any, Mapping, Sequence
@@ -149,11 +148,6 @@ def _json_safe(value: Any) -> Any:
     return str(value)
 
 
-@lru_cache(maxsize=64)
-def file_sha256(path: PathLike, block_size: int = 2**20) -> str:
-    return sha256_file(path, block_size=block_size)
-
-
 def save_figure(
     fig: Figure,
     output_stem: PathLike,
@@ -187,7 +181,7 @@ def save_figure(
     target_paths.append(stem.with_suffix(".parameters.statistics.json"))
     existing = [path for path in target_paths if path.exists()]
     if existing:
-        raise FileExistsError(
+        raise SystemExit(
             "Refusing to overwrite frozen figure bundle: "
             + ", ".join(str(path) for path in existing)
         )
@@ -215,7 +209,7 @@ def save_figure(
                 {
                     "path": str(path),
                     "size_bytes": path.stat().st_size if path.exists() else None,
-                    "sha256": file_sha256(path) if path.is_file() else None,
+                    "sha256": sha256_file(path) if path.is_file() else None,
                 }
             )
         sidecar = stem.with_suffix(".parameters.json")

@@ -27,8 +27,10 @@ from matplotlib.lines import Line2D
 from scipy import sparse
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
+_ROOT = SCRIPT_DIR.parent
+for _path in (str(_ROOT), str(SCRIPT_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from plotting_style import (  # noqa: E402
     apply_publication_style,
@@ -38,6 +40,7 @@ from plotting_style import (  # noqa: E402
     load_plotting_config,
     save_figure,
 )
+from stagecraft.io import CSV_EXCEL  # noqa: E402
 
 try:
     import anndata as sc
@@ -117,7 +120,7 @@ def write_source(frame: pd.DataFrame, out_dir: Path, stem: str) -> Path:
     path = _source_dir(out_dir) / f"{stem}.csv"
     if path.exists():
         raise SystemExit(f"Refusing to overwrite: {path}")
-    frame.to_csv(path, index=False, encoding="utf-8-sig")
+    frame.to_csv(path, index=False, encoding=CSV_EXCEL)
     return path
 
 

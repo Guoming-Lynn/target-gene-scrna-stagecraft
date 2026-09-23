@@ -1,9 +1,15 @@
 """Package only the explicitly reviewed files in release-files.txt."""
 import argparse
+import sys
 from pathlib import Path
-import hashlib
 import zipfile
 import yaml
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from stagecraft.hashing import sha256_bytes  # noqa: E402
 
 
 def release_files(root, manifest="release-files.txt"):
@@ -45,7 +51,7 @@ def package(root, output_dir=None, manifest="release-files.txt"):
     with zipfile.ZipFile(output) as archive:
         if archive.testzip() is not None:
             raise SystemExit("Release archive integrity check failed")
-    digest = hashlib.sha256(output.read_bytes()).hexdigest()
+    digest = sha256_bytes(output.read_bytes())
     sidecar.write_text(f"name={root.name}\nversion={version}\nzip={output.name}\nn_files={len(files)}\nbytes={output.stat().st_size}\nsha256={digest}\n", encoding="utf-8")
     print(output)
     return output

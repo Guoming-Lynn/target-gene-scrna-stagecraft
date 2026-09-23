@@ -42,7 +42,7 @@ class Maintenance(unittest.TestCase):
             path = root / "data.bin"
             path.write_bytes(b"abc")
             expected = hashlib.sha256(b"abc").hexdigest()
-            self.assertEqual(hashes.sha256(path), expected)
+            self.assertEqual(sha256_file(path), expected)
             for obj in ({"path": "data.bin", "sha256": expected.upper()},
                         {"input": "data.bin", "input_sha256": expected}):
                 self.assertEqual(hashes.verify_entries(obj, root)[0]["status"], "verified")
@@ -179,7 +179,7 @@ class Maintenance(unittest.TestCase):
             self.assertEqual(figure_manifest.main([str(written["statistics"])]), 0)
             self.assertTrue(written["parameters"].is_file())
             self.assertTrue(written["statistics"].is_file())
-            with self.assertRaises(FileExistsError):
+            with self.assertRaises(SystemExit):
                 save_figure(plt.figure(), stem, load_plotting_config())
 
     def test_figure_rejects_incomplete_statistics_before_writing(self):

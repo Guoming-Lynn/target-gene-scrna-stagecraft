@@ -24,10 +24,6 @@ from stagecraft.hashing import sha256_file
 from stagecraft.io import load_yaml
 
 
-def sha256(path: Path) -> str:
-    return sha256_file(path)
-
-
 def collect(obj, out: list[str]) -> None:
     if isinstance(obj, dict):
         for k, v in obj.items():
@@ -93,7 +89,7 @@ def verify_entries(obj, root: Path) -> list[dict]:
             path = root / path
         if not path.is_file():
             raise ValueError(f"Missing input: {path}")
-        actual = sha256(path)
+        actual = sha256_file(path)
         if actual != expected.lower():
             raise ValueError(f"SHA-256 mismatch: {path}")
         results.append({"path": str(path.resolve()), "sha256": actual, "status": "verified"})
@@ -139,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{p}\t-\tmissing")
                 missing += 1
                 continue
-        print(f"{path}\t{sha256(path)}\tok")
+        print(f"{path}\t{sha256_file(path)}\tok")
     return 1 if missing else 0
 
 
