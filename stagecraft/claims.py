@@ -9,6 +9,11 @@ from pathlib import Path
 
 _REQUIRED = ("id", "category", "pattern", "allowed", "example")
 _SEPARATORS = set(".。;；!?！？")
+_CONTRAST = re.compile(
+    r"\b(?:but|however|although|though|yet|whereas)\b|但是|然而|不过|但",
+    re.IGNORECASE,
+)
+_TARGET_LABEL = "target_positive_label"
 
 
 @dataclass(frozen=True)
@@ -77,6 +82,38 @@ def load_rules(path: Path | None = None) -> tuple[list[Rule], dict]:
     return rules, settings
 
 
+def prepare_rules(rules: list[Rule], target: str | None = None) -> list[Rule]:
+    """Drop population-label checks unless ``target`` names the gene.
+
+    Lineage labels such as ``CD45+ cells`` are not a claim. With a target,
+    only ``{TARGET}+`` labels are flagged, in the symbol's uppercase form.
+    """
+    symbol = (target or "").strip().upper()
+    if not symbol:
+        return [rule for rule in rules if rule.id != _TARGET_LABEL]
+    if not re.fullmatch(r"[A-Z][A-Z0-9-]*", symbol):
+        raise ValueError(f"target is not a gene symbol: {target}")
+    compiled = re.compile(
+        rf"\b{re.escape(symbol)}\+\s+(?:subtype|cells?|population|macrophages?|fibroblasts?)\b"
+    )
+    prepared: list[Rule] = []
+    for rule in rules:
+        if rule.id != _TARGET_LABEL:
+            prepared.append(rule)
+            continue
+        prepared.append(
+            Rule(
+                id=rule.id,
+                category=rule.category,
+                pattern=compiled,
+                allowed=rule.allowed,
+                example=rule.example,
+                ignore_negation=rule.ignore_negation,
+            )
+        )
+    return prepared
+
+
 def _mask_inline(line: str) -> str:
     chars = list(line)
     index = 0
@@ -95,6 +132,19 @@ def _mask_inline(line: str) -> str:
     return "".join(chars)
 
 
+def _zh_negated(window: str, token: str) -> bool:
+    start = 0
+    while True:
+        index = window.find(token, start)
+        if index < 0:
+            return False
+        # 非 inside 非常 is an intensifier, not a negation.
+        if token == "非" and index + 1 < len(window) and window[index + 1] == "常":
+            start = index + len(token)
+            continue
+        return True
+
+
 def _negated(window: str, settings: dict) -> bool:
     last = -1
     for index, char in enumerate(window):
@@ -102,24 +152,35 @@ def _negated(window: str, settings: dict) -> bool:
             last = index
     if last >= 0:
         window = window[last + 1 :]
+    contrast = None
+    for match in _CONTRAST.finditer(window):
+        contrast = match
+    if contrast is not None:
+        window = window[contrast.end() :]
     english = [re.escape(word) for word in settings.get("negations_en") or []]
     if english and re.search(r"\b(" + "|".join(english) + r")\b", window, re.IGNORECASE):
         return True
     if "n't" in window.lower():
         return True
-    return any(token in window for token in settings.get("negations_zh") or [])
+    return any(_zh_negated(window, token) for token in settings.get("negations_zh") or [])
 
 
 def lint_text(
     text: str,
     rules: list[Rule] | None = None,
     settings: dict | None = None,
+    target: str | None = None,
 ) -> list[Finding]:
-    """Return review findings. Code blocks, inline code, and allow-lines are ignored."""
+    """Return review findings. Code blocks, inline code, and allow-lines are ignored.
+
+    ``target`` limits the population-label rule to that gene. Without it, the
+    rule is not applied.
+    """
     if rules is None or settings is None:
         loaded_rules, loaded_settings = load_rules()
         rules = loaded_rules if rules is None else rules
         settings = loaded_settings if settings is None else settings
+    rules = prepare_rules(rules, target)
     window_size = int(settings.get("negation_window") or 40)
     found: dict[tuple[int, int, str], Finding] = {}
     in_code = False

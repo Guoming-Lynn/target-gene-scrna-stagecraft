@@ -77,6 +77,7 @@ python scripts/_part6_smoke.py
 python scripts/stage_status.py analysis/05_arm_a
 python scripts/stage_report.py analysis/05_arm_a
 python scripts/claim_lint.py analysis/05_arm_a/06_reports --strict
+python scripts/claim_lint.py draft.md --target SPP1
 ```
 
 Figure QA helper:

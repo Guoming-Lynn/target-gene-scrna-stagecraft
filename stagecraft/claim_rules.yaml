@@ -11,7 +11,7 @@ rules:
     example: "The association was independently replicated."
   - id: cross_dataset_consistent
     category: replication
-    pattern: '\bcross[- ]?(dataset|study|cohort)\s+(consisten|replicat|validat)\w*|跨(数据集|研究|队列)(一致|重复|验证)'
+    pattern: '\bcross[- ]?(dataset|study|cohort)\s+(consisten|replicat|validat)\w*|\breplicat\w*\s+across\b[^.。]{0,40}\b(datasets?|studies|cohorts?)\b|跨(数据集|研究|队列)(一致|重复|验证)'
     allowed: "Within-dataset or within-source result, with the source-block holdout stated"
     example: "We observed cross-dataset consistency."
   - id: donor_fraction_as_replication
@@ -31,7 +31,7 @@ rules:
     example: "Three independent cohorts were analysed."
   - id: causal_language
     category: causality
-    pattern: '\b(drives?|driving|drove|causes?|caused|causing|causal(ly)?|regulates?|regulated|regulating)\b|驱动|导致|因果'
+    pattern: '\b(drives?|drivers?|driving|drove|causes?|caused|causing|causal(ly)?|regulates?|regulated|regulating|abolishes?|abolished|mediates?|mediated)\b|\brequired for\b[^.。]{0,40}\b(phenotype|fibrosis|disease|outcome|effect|identity)\b|驱动|导致|因果'
     allowed: "Association between exposure and outcome at the donor-unit level"
     example: "The target gene drives fibrosis."
   - id: proof_language

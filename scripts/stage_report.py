@@ -69,6 +69,7 @@ _PART6_COVERAGE = (
     "family_size",
     "smoke_pass",
     "sham_pass",
+    "ko_primary_bh_pass",
     "run_finished",
     "blocker",
 )
@@ -89,6 +90,15 @@ _PRECISION_KEYS = (
     "effect_floor",
     "fraction_ci_half_width_above_effect_floor",
 )
+_PART5_NO_DIRECTION = frozenset(
+    {
+        "NOT_ESTIMABLE",
+        "INCONCLUSIVE",
+        "REPRODUCTION_FAILED",
+        "COLLINEAR_UNINTERPRETABLE",
+    }
+)
+_PART6_DIRECTION = frozenset({"EMBEDDING_SHIFT_CONSISTENT", "PASS_WITH_LIMITATIONS"})
 
 
 def _token(value: object) -> str:
@@ -165,7 +175,10 @@ def _true_mask(series: pd.Series) -> pd.Series:
 
 
 def _read_table(path: Path) -> pd.DataFrame:
-    frame = read_identity_csv(path, dtype={"gene": str})
+    try:
+        frame = read_identity_csv(path, dtype={"gene": str})
+    except (OSError, UnicodeError, ValueError) as exc:
+        stop(f"{path} could not be read: {exc}", EXIT_USAGE)
     for column in ("logFC", "CI_L", "CI_R", "q_bh", "q_bh_camera", "q_bh_fgsea", "rdf"):
         if column in frame.columns:
             frame[column] = pd.to_numeric(frame[column], errors="coerce")
@@ -195,25 +208,37 @@ def _wording(rows: list[tuple[str, str]]) -> str:
 
 
 def _part5_wording(value, verdict: str) -> str:
+    coverage = (
+        f"{_show(value('n_donors'))} donor-units across {_show(value('n_source_blocks'))} source blocks",
+        "Independent replication in N donors",
+    )
+    if verdict in _PART5_NO_DIRECTION:
+        rows = [
+            (
+                f"Report `{verdict}` and the stop reason only",
+                "A directional association, replication claim, or equivalence",
+            ),
+            coverage,
+        ]
+        if verdict == "NOT_ESTIMABLE":
+            rows.append(("`NOT_ESTIMABLE` is the result of this arm", "No association, negative result, or equivalence"))
+        if verdict in {"INCONCLUSIVE", "REPRODUCTION_FAILED"}:
+            rows.append(("The frozen rules did not reach a verdict", "Any directional conclusion"))
+        if verdict == "COLLINEAR_UNINTERPRETABLE" or value("collinearity_review_required") is True:
+            rows.append(("Two scales of one measurement", "Two independent readouts or datasets"))
+        return _wording(rows)
     rows = [
         (
             "Association between exposure and outcome at the donor-unit level, within this arm",
             "Causal, regulatory, or driver language",
         ),
-        (
-            f"{_show(value('n_donors'))} donor-units across {_show(value('n_source_blocks'))} source blocks",
-            "Independent replication in N donors",
-        ),
+        coverage,
     ]
     if verdict == "SINGLE_SOURCE_DEPENDENT" or value("source_dependent") is True:
         rows.append(("Consistent within one source block", "Cross-dataset or cross-source consistency"))
     if value("evidence_ceiling") == "exploratory" or value("estimand_mode") == "joint_common_slope":
         rows.append(("Exploratory association", "Discovery or formal finding"))
-    if verdict == "NOT_ESTIMABLE":
-        rows.append(("`NOT_ESTIMABLE` is the result of this arm", "No association, negative result, or equivalence"))
-    if verdict in {"INCONCLUSIVE", "REPRODUCTION_FAILED"}:
-        rows.append(("The frozen rules did not reach a verdict", "Any directional conclusion"))
-    if value("collinearity_review_required") is True or verdict == "COLLINEAR_UNINTERPRETABLE":
+    if value("collinearity_review_required") is True:
         rows.append(("Two scales of one measurement", "Two independent readouts or datasets"))
     if verdict.startswith("FROZEN_PASS"):
         rows.append(("Frozen protocol gates held", "Empirically calibrated FDR, adequate power, or validation"))
@@ -227,7 +252,18 @@ def _part5_wording(value, verdict: str) -> str:
     return _wording(rows)
 
 
-def _part6_wording(value, tags: list) -> str:
+def _part6_wording(value, tags: list, verdict: str) -> str:
+    ceiling = ("The Part 5 ceiling is unchanged", "Upgrading a Part 5 source-block ceiling")
+    if verdict not in _PART6_DIRECTION:
+        return _wording(
+            [
+                (
+                    f"Report `{verdict}` and the stop reason only",
+                    "An embedding shift, direction consistency, or biological effect",
+                ),
+                ceiling,
+            ]
+        )
     rows = [
         (
             "Embedding shift along the frozen axis under the frozen model",
@@ -240,7 +276,7 @@ def _part6_wording(value, tags: list) -> str:
     ]
     if "KO_OE_UNPAIRED" in tags or value("ko_oe_unpaired") is True:
         rows.append(("KO and OE reported as separate populations", "A paired KO/OE mechanistic mirror"))
-    rows.append(("The Part 5 ceiling is unchanged", "Upgrading a Part 5 source-block ceiling"))
+    rows.append(ceiling)
     return _wording(rows)
 
 
@@ -255,6 +291,13 @@ def _not_claimed(value) -> str:
     return "\n".join(lines)
 
 
+def _relative_input(stage: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(stage.resolve()).as_posix()
+    except ValueError:
+        return path.resolve().as_posix()
+
+
 def _provenance(stage: Path, paths: list[Path]) -> str:
     lines = [
         f"Generated by stagecraft {__version__}. Numbers are copied from the files below.",
@@ -263,8 +306,7 @@ def _provenance(stage: Path, paths: list[Path]) -> str:
         "|---|---|",
     ]
     for path in paths:
-        relative = path.resolve().relative_to(stage.resolve()).as_posix()
-        lines.append(f"| `{relative}` | `{sha256_file(path)}` |")
+        lines.append(f"| `{_relative_input(stage, path)}` | `{sha256_file(path)}` |")
     return "\n".join(lines)
 
 
@@ -277,7 +319,12 @@ def render_report(stage: Path, part: int, tables: str, top: int) -> tuple[str, l
     read_paths = [verdict_path]
     audit = None
     if audit_path.is_file():
-        audit = json.loads(audit_path.read_text(encoding="utf-8"))
+        try:
+            audit = json.loads(audit_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            stop(f"model_audit.json is not JSON: {exc}", EXIT_USAGE)
+        except UnicodeError as exc:
+            stop(f"model_audit.json is not UTF-8: {exc}", EXIT_USAGE)
         if not isinstance(audit, dict):
             stop("model_audit.json must be an object", EXIT_USAGE)
         read_paths.append(audit_path)
@@ -286,10 +333,11 @@ def render_report(stage: Path, part: int, tables: str, top: int) -> tuple[str, l
     ceiling = value("evidence_ceiling")
     ceiling_text = _token(ceiling) if ceiling is not None else "not declared"
     tags = list(verdict.get("tags") or [])
+    provenance_at = "@@PROVENANCE@@"
     sections = [
         f"# Part {part} report: {stage.name}",
         "",
-        _provenance(stage, read_paths),
+        provenance_at,
         "",
         "## 1. Conclusion",
         "",
@@ -391,7 +439,7 @@ def render_report(stage: Path, part: int, tables: str, top: int) -> tuple[str, l
             + ("true" if "CONTROL_RANKS_NOT_ESTIMABLE" in tags else "false")
         )
     sections.extend(["", "## 6. Wording consequences", ""])
-    sections.append(_part6_wording(value, tags) if part == 6 else _part5_wording(value, token))
+    sections.append(_part6_wording(value, tags, token) if part == 6 else _part5_wording(value, token))
     sections.extend(["", "## 7. Explicitly not shown or claimed", ""])
     if part == 6:
         for key in (
@@ -405,10 +453,7 @@ def render_report(stage: Path, part: int, tables: str, top: int) -> tuple[str, l
     else:
         sections.append(_not_claimed(value))
     sections.append("")
-    # Provenance was rendered before optional tables were known. Rebuild it.
-    body = "\n".join(sections)
-    marker = _provenance(stage, [verdict_path])
-    body = body.replace(marker, _provenance(stage, read_paths), 1)
+    body = "\n".join(sections).replace(provenance_at, _provenance(stage, read_paths), 1)
     return body, read_paths
 
 

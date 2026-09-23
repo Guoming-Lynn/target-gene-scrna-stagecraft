@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [2.3.1] - 2026-09-23
+
+### Fixed
+- Stage reports for `NOT_ESTIMABLE`, `INCONCLUSIVE`, `REPRODUCTION_FAILED`, `COLLINEAR_UNINTERPRETABLE`, and non-passing Part 6 tokens no longer list a directional association as allowed.
+- Claim review does not let a negation cross `but` / `但是`, does not treat `非常` as a negation, and flags `driver`, `abolishes`, `mediates`, `required for the phenotype`, and `replicated across datasets`.
+- Population labels are flagged only with `claim_lint.py --target GENE`. Lineage labels such as `CD45+ cells` are left alone.
+- A malformed `model_audit.json` or evidence table exits 1 and writes no report. Provenance hashes each input once and accepts a table directory outside the stage.
+- `stage_status.py` accepts `FROZEN_PROTOCOL.md`, prints the report and claim-lint commands on separate lines, and includes the Part 6 config, control, and smoke steps. Part 6 coverage includes `ko_primary_bh_pass`.
+- No statistical output or threshold changed.
+
 ## [2.3.0] - 2026-09-23
 
 ### Added

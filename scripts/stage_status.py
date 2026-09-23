@@ -86,7 +86,7 @@ def _part5() -> list[Step]:
         Step(
             "report",
             ("06_reports/*_REPORT.md",),
-            "python scripts/stage_report.py {stage} && python scripts/claim_lint.py {stage}/06_reports",
+            "python scripts/stage_report.py {stage}\npython scripts/claim_lint.py {stage}/06_reports",
         ),
     ]
 
@@ -97,6 +97,11 @@ def _part6() -> list[Step]:
             "protocol",
             ("00_protocol_manifest/PROTOCOL*.md",),
             "Write 00_protocol_manifest/PROTOCOL.md from references/protocol-template.md",
+        ),
+        Step(
+            "config",
+            ("00_protocol_manifest/analysis_config.yaml",),
+            "Copy scripts/part6_analysis_config.example.yaml to {stage}/00_protocol_manifest/analysis_config.yaml and freeze its values",
         ),
         Step(
             "freeze",
@@ -112,6 +117,16 @@ def _part6() -> list[Step]:
             "tokens",
             ("{tables}/token_audit.csv",),
             "python scripts/part6_token_audit.py <token_ledger.csv> --out {stage}/{tables}/token_audit.csv",
+        ),
+        Step(
+            "controls",
+            ("05_controls/frozen_controls.csv",),
+            "python scripts/part6_controls.py <gene_stats.csv> --target <TARGET_GENE> --endpoint-union <endpoint_members.txt> --out {stage}/05_controls/frozen_controls.csv",
+        ),
+        Step(
+            "smoke",
+            ("05_logs/smoke_gate.json",),
+            "python scripts/part6_smoke_gate.py <parity.csv> --perturbations KO,OE --out {stage}/05_logs/smoke_gate.json",
         ),
         Step(
             "axes",
@@ -136,7 +151,7 @@ def _part6() -> list[Step]:
         Step(
             "report",
             ("06_reports/*_REPORT.md",),
-            "python scripts/stage_report.py {stage} && python scripts/claim_lint.py {stage}/06_reports",
+            "python scripts/stage_report.py {stage}\npython scripts/claim_lint.py {stage}/06_reports",
         ),
     ]
 
@@ -147,7 +162,11 @@ def _fill(text: str, stage: Path, tables: str) -> str:
 
 def _exists(stage: Path, pattern: str) -> bool:
     if any(char in pattern for char in "*?[]"):
-        return any(stage.glob(pattern))
+        if any(stage.glob(pattern)):
+            return True
+        if pattern.endswith("PROTOCOL*.md"):
+            return any(stage.glob(pattern.replace("PROTOCOL*.md", "FROZEN_PROTOCOL*.md")))
+        return False
     return (stage / pattern).is_file()
 
 
@@ -204,12 +223,15 @@ def inspect_stage(stage: Path, part: int, tables: str) -> dict:
             )
     verdict = _load_verdict(stage)
     receipt = stage / "00_protocol_manifest" / "protocol_freeze.json"
-    protocols = sorted((stage / "00_protocol_manifest").glob("PROTOCOL*.md"))
+    manifest = stage / "00_protocol_manifest"
+    protocols = sorted(manifest.glob("PROTOCOL*.md")) or sorted(manifest.glob("FROZEN_PROTOCOL*.md"))
     if receipt.is_file() and protocols:
         try:
             chronology = str(check_chronology(protocols[0], stage))
-        except (ValueError, OSError, KeyError) as exc:
+        except (ValueError, OSError, KeyError, TypeError) as exc:
             chronology = f"FAILED: {exc}"
+    elif receipt.is_file():
+        chronology = "FAILED: freeze receipt has no PROTOCOL.md or FROZEN_PROTOCOL.md"
     else:
         chronology = "NOT_VERIFIED"
         if _has_files(stage / "03_pseudobulk") or _has_files(stage / tables):
@@ -290,7 +312,8 @@ def main(argv: list[str] | None = None) -> int:
         print("Next: none")
     else:
         print(f"Next: {report['next']['id']}")
-        print(f"  {report['next']['command']}")
+        for line in report["next"]["command"].splitlines():
+            print(f"  {line}")
     if report["warnings"]:
         print("Warnings:")
         for warning in report["warnings"]:

@@ -6,6 +6,7 @@ Review aid, not a gate unless --strict.
 Usage:
     python scripts/claim_lint.py analysis/05_arm_a/06_reports
     python scripts/claim_lint.py draft.md --strict --json findings.json
+    python scripts/claim_lint.py draft.md --target SPP1
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 _ensure_repo_on_path(__file__)
 
 from stagecraft import EXIT_GATE, EXIT_OK, EXIT_USAGE, stop  # noqa: E402
-from stagecraft.claims import load_rules, lint_text  # noqa: E402
+from stagecraft.claims import load_rules, lint_text, prepare_rules  # noqa: E402
 from stagecraft.io import publish_new_files  # noqa: E402
 
 
@@ -48,11 +49,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("paths", nargs="+", type=Path)
     parser.add_argument("--rules", type=Path, default=None)
+    parser.add_argument("--target", default=None, help="Flag only this gene as a population label")
     parser.add_argument("--json", dest="json_out", type=Path, default=None)
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args(argv)
     try:
         rules, settings = load_rules(args.rules)
+        prepare_rules(rules, args.target)
     except (OSError, ValueError, UnicodeError) as exc:
         stop(str(exc), EXIT_USAGE)
     files = _collect(args.paths)
@@ -62,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
             text = path.read_text(encoding="utf-8")
         except UnicodeError as exc:
             stop(f"{path} is not UTF-8: {exc}", EXIT_USAGE)
-        for finding in lint_text(text, rules, settings):
+        for finding in lint_text(text, rules, settings, target=args.target):
             print(
                 f'{path}:{finding.line}:{finding.column}: {finding.rule_id}: '
                 f'"{finding.matched}" -> {finding.allowed}'

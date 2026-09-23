@@ -15,7 +15,7 @@ return to their producing stage, not substitute a cell-level test.
 | Other estimands or mechanistic extensions | Separate protocol | Parts 7/8 are not implemented here |
 
 For a new executor, first run `python quickstart.py --out new_smoke_output`.
-Inside a Part 5 or Part 6 stage, `python scripts/stage_status.py <stage>` lists completed steps and the next command.
+Inside a Part 5 or Part 6 stage, `python scripts/stage_status.py <stage>` lists completed steps and the next command. A protocol may be named `PROTOCOL.md` or `FROZEN_PROTOCOL.md`. Part 6 also expects `05_controls/frozen_controls.csv` and `05_logs/smoke_gate.json` before the axis step. The report and claim-lint commands are printed on separate lines.
 The [reference index](README.md) lists specs, figure contracts and runtime docs.
 Before the chosen stage run `python scripts/check_environment.py --stage partN`.
 Smoke success proves neither a working Geneformer model nor scientific validity.

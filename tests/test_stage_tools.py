@@ -21,7 +21,9 @@ class ClaimLintTests(unittest.TestCase):
         rules, settings = load_rules()
         for rule in rules:
             with self.subTest(rule=rule.id):
-                hits = {item.rule_id for item in lint_text(rule.example, rules, settings)}
+                self.assertIsNotNone(rule.pattern.search(rule.example))
+                target = "SPP1" if rule.id == "target_positive_label" else None
+                hits = {item.rule_id for item in lint_text(rule.example, rules, settings, target=target)}
                 self.assertIn(rule.id, hits)
 
     def test_combined_sentence_reports_line_and_column(self):
@@ -61,6 +63,41 @@ class ClaimLintTests(unittest.TestCase):
     def test_harmless_phrases_are_not_flagged(self):
         self.assertEqual(lint_text("upregulated genes"), [])
         self.assertEqual(lint_text("negative controls"), [])
+        self.assertEqual(lint_text("CD45+ cells were retained after QC."), [])
+        self.assertEqual(lint_text("EPCAM+ cells formed the epithelial compartment."), [])
+        self.assertEqual(lint_text("A minimum cell count is required for inclusion."), [])
+
+    def test_contrast_clause_does_not_inherit_negation(self):
+        hits = {item.rule_id for item in lint_text("This result was not validated, but it causes fibrosis.")}
+        self.assertIn("causal_language", hits)
+        self.assertNotIn("validated_claim", hits)
+        self.assertEqual(lint_text("The gene cannot, in this design, drive fibrosis."), [])
+
+    def test_added_causal_and_replication_phrases_are_flagged(self):
+        self.assertIn("causal_language", {item.rule_id for item in lint_text("SPP1 is a key driver of fibrosis.")})
+        self.assertIn(
+            "causal_language",
+            {item.rule_id for item in lint_text("Loss of the target abolishes the phenotype.")},
+        )
+        self.assertIn(
+            "causal_language",
+            {item.rule_id for item in lint_text("Loss of the target is required for the phenotype.")},
+        )
+        self.assertIn(
+            "cross_dataset_consistent",
+            {item.rule_id for item in lint_text("The effect was replicated across all three datasets.")},
+        )
+        self.assertIn("independent_replication", {item.rule_id for item in lint_text("这是一个非常独立验证的结果")})
+
+    def test_tilde_fence_is_ignored(self):
+        text = "\n".join(["~~~", "independently replicated", "~~~"])
+        self.assertEqual(lint_text(text), [])
+
+    def test_target_limits_population_labels(self):
+        self.assertEqual(lint_text("SPP1+ macrophages expanded."), [])
+        hits = {item.rule_id for item in lint_text("SPP1+ macrophages expanded.", target="spp1")}
+        self.assertIn("target_positive_label", hits)
+        self.assertEqual(lint_text("CD45+ cells were retained.", target="SPP1"), [])
 
     def test_nonsignificant_equivalence_ignores_its_own_negation(self):
         hits = {item.rule_id for item in lint_text("The result was not significant and therefore equivalent.")}
@@ -106,6 +143,15 @@ class ClaimLintTests(unittest.TestCase):
                 claim_lint.main([str(dirty), "--json", str(out)])
             with self.assertRaises(SystemExit) as caught:
                 claim_lint.main([str(missing)])
+            self.assertEqual(caught.exception.code, EXIT_USAGE)
+            lineage = root / "lineage.md"
+            lineage.write_text("CD45+ cells were retained after QC.\n", encoding="utf-8")
+            labeled = root / "labeled.md"
+            labeled.write_text("SPP1+ macrophages expanded.\n", encoding="utf-8")
+            self.assertEqual(claim_lint.main([str(lineage), "--strict"]), 0)
+            self.assertEqual(claim_lint.main([str(labeled), "--target", "SPP1", "--strict"]), EXIT_GATE)
+            with self.assertRaises(SystemExit) as caught:
+                claim_lint.main([str(labeled), "--target", "5"])
             self.assertEqual(caught.exception.code, EXIT_USAGE)
 
 
@@ -221,6 +267,61 @@ class StageReportTests(unittest.TestCase):
             self.assertIn("# Part 6 report:", text)
             self.assertIn("`A paired KO/OE mechanistic mirror`", text)
 
+    def test_stopped_verdicts_do_not_allow_a_directional_claim(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            part5 = root / "arm5"
+            (part5 / "05_logs").mkdir(parents=True)
+            (part5 / "05_logs" / "verdict.json").write_text(
+                json.dumps({"verdict": "NOT_ESTIMABLE", "n_donors": 6, "n_source_blocks": 1}),
+                encoding="utf-8",
+            )
+            self.assertEqual(stage_report.main([str(part5)]), 0)
+            text = (part5 / "06_reports" / "PART5_REPORT.md").read_text(encoding="utf-8")
+            wording = text.split("## 6. Wording consequences", 1)[1]
+            self.assertIn("Report `NOT_ESTIMABLE` and the stop reason only", wording)
+            self.assertNotIn("Association between exposure", wording)
+            self.assertEqual(lint_text(text), [])
+            part6 = root / "arm6"
+            (part6 / "05_logs").mkdir(parents=True)
+            (part6 / "05_logs" / "verdict.json").write_text(
+                json.dumps(
+                    {
+                        "verdict": "NOT_ESTIMABLE",
+                        "evidence_class": "exploratory_embedding_only",
+                        "tags": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(stage_report.main([str(part6)]), 0)
+            text = (part6 / "06_reports" / "PART6_REPORT.md").read_text(encoding="utf-8")
+            wording = text.split("## 6. Wording consequences", 1)[1]
+            self.assertIn("Report `NOT_ESTIMABLE` and the stop reason only", wording)
+            self.assertNotIn("Embedding shift along the frozen axis", wording)
+            self.assertIn("ko_primary_bh_pass", text)
+
+    def test_malformed_audit_exits_without_writing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stage = self._part5(Path(tmp))
+            (stage / "05_logs" / "model_audit.json").write_text("{not json", encoding="utf-8")
+            with self.assertRaises(SystemExit) as caught:
+                stage_report.main([str(stage)])
+            self.assertEqual(caught.exception.code, EXIT_USAGE)
+            self.assertFalse((stage / "06_reports").exists())
+
+    def test_table_outside_the_stage_still_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            stage = self._part5(root)
+            outside = root / "outside"
+            outside.mkdir()
+            (stage / "02_tables" / "gene_evidence.csv").replace(outside / "gene_evidence.csv")
+            self.assertEqual(stage_report.main([str(stage), "--tables-dir", str(outside)]), 0)
+            text = (stage / "06_reports" / "PART5_REPORT.md").read_text(encoding="utf-8")
+            self.assertIn("0.1235", text)
+            self.assertIn(outside.resolve().as_posix(), text)
+
 
 class StageStatusTests(unittest.TestCase):
     def test_protocol_only_points_at_config(self):
@@ -292,6 +393,54 @@ class StageStatusTests(unittest.TestCase):
             payload = json.loads(out.read_text(encoding="utf-8"))
             self.assertEqual(payload["part"], 6)
 
+    def test_embedding_evidence_class_selects_part6(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stage = Path(tmp) / "arm"
+            logs = stage / "05_logs"
+            logs.mkdir(parents=True)
+            (logs / "verdict.json").write_text(
+                '{"verdict": "NOT_ESTIMABLE", "evidence_class": "exploratory_embedding_only"}\n',
+                encoding="utf-8",
+            )
+            out = stage / "status.json"
+            self.assertEqual(stage_status.main([str(stage), "--json", str(out)]), 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(payload["part"], 6)
+            ids = [item["id"] for item in payload["steps"]]
+            self.assertEqual(ids[:4], ["protocol", "config", "freeze", "endpoints"])
+            self.assertIn("controls", ids)
+            self.assertIn("smoke", ids)
+            self.assertLess(ids.index("smoke"), ids.index("axes"))
+
+    def test_frozen_protocol_name_is_recognized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stage = Path(tmp) / "arm"
+            manifest = stage / "00_protocol_manifest"
+            manifest.mkdir(parents=True)
+            (manifest / "FROZEN_PROTOCOL.md").write_text("frozen analysis\n", encoding="utf-8")
+            (manifest / "protocol_freeze.json").write_text("{}\n", encoding="utf-8")
+            out = stage / "status.json"
+            self.assertEqual(stage_status.main([str(stage), "--json", str(out)]), 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            status = {item["id"]: item["status"] for item in payload["steps"]}
+            self.assertEqual(status["protocol"], "DONE")
+            self.assertNotIn("no freeze receipt", payload["chronology"])
+            self.assertTrue(payload["chronology"].startswith("FAILED:"))
+            self.assertFalse(any("without step protocol" in item for item in payload["warnings"]))
+
+    def test_tables_dir_falls_back_to_03_tables(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stage = Path(tmp) / "arm"
+            tables = stage / "03_tables"
+            tables.mkdir(parents=True)
+            (tables / "eligibility.csv").write_text("a\n", encoding="utf-8")
+            out = stage / "status.json"
+            self.assertEqual(stage_status.main([str(stage), "--json", str(out)]), 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            eligibility = next(item for item in payload["steps"] if item["id"] == "eligibility")
+            self.assertEqual(eligibility["status"], "DONE")
+            self.assertEqual(eligibility["artifacts"], ["03_tables/eligibility.csv"])
+
     def test_missing_directory_returns_1(self):
         with tempfile.TemporaryDirectory() as tmp:
             missing = Path(tmp) / "absent"
@@ -304,7 +453,7 @@ class StageStatusTests(unittest.TestCase):
             out = stage / "status.json"
             self.assertEqual(stage_status.main([str(stage), "--json", str(out)]), 0)
             payload = json.loads(out.read_text(encoding="utf-8"))
-            self.assertEqual(set(payload) >= {"steps", "next", "warnings"}, True)
+            self.assertTrue({"steps", "next", "warnings"} <= set(payload))
 
 
 if __name__ == "__main__":
