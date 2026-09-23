@@ -81,7 +81,7 @@ report per +10 percentage points
 
 Alternative: donor-unit log2CPM of the same gene.
 
-If Spearman(detection, intensity) > 0.9 at the unit level, passing the second model is not orthogonal support for "not a dropout artifact" beyond a weak statement. Protocol must say so.
+If Spearman(detection, intensity) is greater than `diagnostics.rho_review` (default 0.9) at the unit level, Part 5 records `COLLINEARITY_REVIEW_REQUIRED`. That comparison is strict `>`. Part 4's `COLLINEAR_SCALES` note uses `|ρ| ≥ 0.9`. Passing the second model is not orthogonal support for "not a dropout artifact" beyond a weak statement. Protocol must say so.
 
 ## Matching and other secondaries
 

@@ -1,4 +1,5 @@
 import itertools
+import json
 import math
 import os
 import sys
@@ -9,8 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from part5_verdict import guarded_verdict
+from part5_verdict import guarded_verdict, main as verdict_main
 from part6_sign_tests import median_order_statistic_interval, sign_tests
 from protocol_chronology import check_chronology
 from part6_controls import select_controls
@@ -74,6 +74,26 @@ class ReviewBoundaries(unittest.TestCase):
             os.utime(output, (1, 1))
             with self.assertRaises(ValueError):
                 check_chronology(protocol, root)
+
+    def test_verdict_reports_a_local_freeze_receipt(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            protocol = root / "00_protocol_manifest" / "PROTOCOL.md"
+            protocol.parent.mkdir(parents=True)
+            protocol.write_text("frozen analysis\n")
+            check_chronology(protocol, root, freeze=True)
+            logs = root / "05_logs"
+            logs.mkdir()
+            audit = logs / "model_audit.json"
+            audit.write_text("{}\n", encoding="utf-8")
+            out = logs / "verdict.json"
+            table = Path(__file__).resolve().parents[1] / "scripts" / "part5_verdict_table.example.yaml"
+            self.assertEqual(verdict_main([str(audit), "--table", str(table), "--out", str(out)]), 0)
+            payload = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(
+                payload["protocol_chronology"],
+                "LOCAL_SEQUENCE_CONSISTENT_NOT_TRUSTED_PREREGISTRATION",
+            )
 
     def test_interval_small_n_must_be_unbounded(self):
         low, high, coverage, status = median_order_statistic_interval([1, 2, 3, 4, 5])

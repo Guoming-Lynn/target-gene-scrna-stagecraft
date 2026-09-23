@@ -1,5 +1,4 @@
 import hashlib
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import hash_inputs as hashes
 from stagecraft.hashing import sha256_file
 import check_protocol as protocol
@@ -126,8 +124,8 @@ class Maintenance(unittest.TestCase):
                                    "pval_adj": [.01, .9]})
             argv = ["cluster_review_tables", str(root / "input.h5ad"), "--leiden-key", "cluster",
                     "--strict-positive", "--out", str(root / "out")]
-            with patch.object(sys, "argv", argv), patch.object(review, "markers", return_value=ranked):
-                self.assertEqual(review.main(), 0)
+            with patch.object(review, "markers", return_value=ranked):
+                self.assertEqual(review.main(argv[1:]), 0)
             table = pd.read_csv(root / "out/cluster_top20_by_cluster.csv", keep_default_na=False,
                                 dtype={"cluster": str})
             self.assertEqual(table.cluster.tolist(), ["0", "1"])
@@ -181,6 +179,29 @@ class Maintenance(unittest.TestCase):
             self.assertTrue(written["statistics"].is_file())
             with self.assertRaises(SystemExit):
                 save_figure(plt.figure(), stem, load_plotting_config())
+
+    def test_png_export_writes_a_png_signature(self):
+        statistics = {
+            "estimand": "donor-unit association",
+            "biological_unit": "dataset × donor_id",
+            "n_definition": "eligible donor-units",
+            "n": 12,
+            "model_or_test": "limma-voom QW",
+            "effect_scale": "log2 fold change",
+            "error_bar": "95% CI",
+            "multiple_testing_family": "all target-excluded genes",
+            "adjustment": "BH",
+            "claim_ceiling": "association only",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            stem = Path(tmp) / "F05_10"
+            fig, ax = plt.subplots()
+            ax.plot([0, 1], [0, 1])
+            written = save_figure(
+                fig, stem, load_plotting_config(), parameters={"plot": "test"},
+                statistics=statistics, formats=["png"],
+            )
+            self.assertTrue(written["png"].read_bytes().startswith(b"\x89PNG\r\n\x1a\n"))
 
     def test_figure_rejects_incomplete_statistics_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:

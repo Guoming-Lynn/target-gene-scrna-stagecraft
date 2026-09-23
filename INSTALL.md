@@ -63,9 +63,11 @@ See [references/r-requirements.md](references/r-requirements.md).
 | Code | Meaning |
 |---|---|
 | 0 | Success |
-| 1 | Usage or validation error |
-| 2 | Environment/gate failure |
-| 3 | Not estimable / no KO-eligible cells |
+| 1 | Usage or validation: missing columns, bad types, overwrite refusal, malformed arguments |
+| 2 | Gate or environment failure. The stage stops |
+| 3 | Not estimable, or no KO-eligible cells |
+
+Exit 2 is returned by `check_environment.py`, `quickstart.py` (failed component), `project_arm_inventory.py`, `part6_smoke_gate.py`, `part6_endpoints.py` (primary coverage or a frozen-set hash mismatch), `part6_token_audit.py` (gate), `part5_eligibility.py` (no eligible units), `part6_axes.py` (too few donor axes, or skipped donors above `--max-skipped-fraction`), and `part6_sign_tests.py` (family larger than declared). Exit 3 is `part6_token_audit.py` when the ledger is not estimable. Other helpers use exit 1 for bad input.
 
 ## Part 6
 
@@ -81,5 +83,5 @@ KO donors, and a test count no larger than the frozen family.
 
 ## Releases
 
-Release packaging uses the exact file whitelist in `release-files.txt`.
-Review and update it when adding source files; files not listed are excluded.
+The skill archive is built from `skill-files.txt` and omits `.github/`.
+`release-files.txt` is the full repository whitelist. Review both when adding source files; files not listed are excluded from that archive.

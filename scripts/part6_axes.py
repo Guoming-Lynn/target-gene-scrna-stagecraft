@@ -23,7 +23,11 @@ import pandas as pd
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
 
+_ensure_repo_on_path(__file__)
+
+from stagecraft import EXIT_GATE, stop  # noqa: E402
 from stagecraft.io import read_identity_csv  # noqa: E402
 
 
@@ -44,7 +48,7 @@ def top_bottom_indices(
         raise ValueError("Finite, nonconstant baseline scores required")
     k = max(min_side, int(np.ceil(quartile * n)))
     if n < 2 * k:
-        raise ValueError(f"need ≥{2 * k} cells to form top/bottom, got {n}")
+        raise ValueError(f"need >= {2 * k} cells to form top/bottom, got {n}")
     order = np.lexsort((np.asarray(cell_ids, dtype=str), np.asarray(scores, dtype=float)))
     return order[-k:], order[:k]
 
@@ -94,7 +98,10 @@ def build_axes(
     min_side: int = 3,
     min_cells: int = 10,
     min_training: int = 10,
-) -> dict[str, np.ndarray]:
+    max_skipped_fraction: float = 0.5,
+) -> tuple[dict[str, np.ndarray], list[dict[str, str]]]:
+    if not 0 <= max_skipped_fraction <= 1:
+        raise SystemExit("max_skipped_fraction must be between 0 and 1")
     required = {"cell_id", "dataset_donor_id"}
     missing = required.difference(cells.columns)
     if missing:
@@ -133,8 +140,17 @@ def build_axes(
             skipped.append({"donor": str(donor), "reason": str(exc)})
             continue
     if len(donor_axes) < min_training + 1:
-        raise SystemExit(
-            f"need ≥{min_training + 1} valid donor axes, got {len(donor_axes)}; skipped {len(skipped)}"
+        stop(
+            f"need >= {min_training + 1} valid donor axes, got {len(donor_axes)}; skipped {len(skipped)}",
+            EXIT_GATE,
+        )
+    n_considered = len(set(donors))
+    skipped_fraction = len(skipped) / n_considered if n_considered else 0.0
+    if skipped_fraction > max_skipped_fraction:
+        stop(
+            f"skipped {len(skipped)} of {n_considered} donors "
+            f"({skipped_fraction:.2f} > {max_skipped_fraction}); refusing a mostly dropped axis",
+            EXIT_GATE,
         )
     loo = {donor: loo_axis(donor_axes, donor) for donor in donor_axes}
     for donor, axis in loo.items():
@@ -150,7 +166,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--endpoint", required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--score-col", default=None)
+    parser.add_argument("--max-skipped-fraction", type=float, default=0.5)
     args = parser.parse_args(argv)
+    if args.out.suffix.lower() != ".npz":
+        raise SystemExit("Axis output must end in .npz")
     cls = np.load(args.cls)
     cells = read_identity_csv(args.cells)
     score_table = read_identity_csv(args.scores)
@@ -162,7 +181,9 @@ def main(argv: list[str] | None = None) -> int:
     if set(cells["cell_id"]) != set(score_table["cell_id"]):
         raise SystemExit("Score and CLS cell identities must match exactly.")
     score_table = cells[["cell_id"]].merge(score_table, on="cell_id", how="left", validate="one_to_one")
-    loo, skipped = build_axes(cls, cells, score_table[col])
+    loo, skipped = build_axes(
+        cls, cells, score_table[col], max_skipped_fraction=args.max_skipped_fraction
+    )
     skipped_path = args.out.with_suffix(".skipped.json")
     for path in (args.out, skipped_path):
         if path.exists():

@@ -72,7 +72,7 @@ audit_models <- function(tab, meta, cfg, subsets, lodo_names, resolve) {
     expected <- reproduction$sha256
     if (is.null(expected) || !grepl("^[[:xdigit:]]{64}$", expected) ||
         !file.exists(parent_path) || digest::digest(file=parent_path, algo="sha256") != tolower(expected)) stop("Parent reproduction hash missing/mismatched")
-    parent <- read.csv(parent_path, check.names=FALSE)
+    parent <- read.csv(parent_path, check.names=FALSE, colClasses=c(gene="character"))
     if ("subset" %in% names(parent)) parent <- parent[parent$subset == "FULL", , drop=FALSE]
     if ("model" %in% names(parent)) parent <- parent[parent$model == "limma_primary", , drop=FALSE]
     if (!all(c("gene", "logFC") %in% names(parent)) || anyDuplicated(parent$gene)) stop("Invalid parent coefficients")

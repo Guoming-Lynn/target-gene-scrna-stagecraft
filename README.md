@@ -1,6 +1,6 @@
 # target-gene-scrna-stagecraft
 
-[中文说明](README.zh-CN.md) · English · v2.2.0
+[中文说明](README.zh-CN.md) · English · v2.2.1
 
 [![CI](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -144,6 +144,15 @@ The cell-level fallback is `scripts/part5_cell_exploratory.py`. It refuses to
 run without `I_ACCEPT_CELL_LEVEL_FALSE_POSITIVE_RISK` and cannot enter the
 formal verdict. `scripts/simulation_contract.py` writes a **manifest only**;
 it does not run 1,000 calibration replicates.
+
+## Release packaging
+
+```bash
+python scripts/package_skill.py --out-dir release
+```
+
+The skill archive is built from `skill-files.txt` and does not include `.github/`.
+`release-files.txt` remains the full repository whitelist. Check the sibling `.sha256.txt` before publishing the zip.
 
 ## License
 

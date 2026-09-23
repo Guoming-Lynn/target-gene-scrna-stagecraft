@@ -23,8 +23,11 @@ import pandas as pd
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
 
-from stagecraft.io import CSV_EXCEL, load_yaml, parse_bool_column, read_identity_csv, require_new, require_yaml
+_ensure_repo_on_path(__file__)
+
+from stagecraft.io import CSV_EXCEL, load_yaml, parse_bool_column, publish_new_files, read_identity_csv, require_yaml
 from stagecraft.numeric import nonpositive
 
 GSE_RE = re.compile(r"GSE(\d+)", re.I)
@@ -217,9 +220,8 @@ def main(argv: list[str] | None = None) -> int:
     if mapping:
         unknown = sorted(set(work[args.dataset_key].astype(str)) - set(mapping))
         if unknown:
-            raise ValueError(f"Datasets missing from source-block map: {unknown}. Freeze the map before LODO.")
+            raise SystemExit(f"Datasets missing from source-block map: {unknown}. Freeze the map before LODO.")
 
-    args.out.mkdir(parents=True, exist_ok=True)
     donor_col = "dataset_donor_id" if "dataset_donor_id" in work.columns else args.dataset_key
     grouped = work.groupby([args.dataset_key, "source_block"], observed=True)
     block_map = grouped.agg(n_units=(donor_col, "size"), n_donors=(donor_col, "nunique")).reset_index()
@@ -229,25 +231,16 @@ def main(argv: list[str] | None = None) -> int:
     suggestions = suggest_siblings(work, args.dataset_key, args.donor_key)
     var_share = between_within_fraction(work[args.exposure].to_numpy(float), work[args.dataset_key].astype(str).to_numpy())
 
-    for name, table in {
-        "source_block_map.csv": block_map,
-        "exposure_range_by_dataset.csv": exposure,
-        "source_block_suggestions.csv": suggestions,
-    }.items():
-        path = args.out / name
-        require_new(path)
-        table.to_csv(path, index=False, encoding=CSV_EXCEL)
-
-    annotated_path = args.out / "metadata_with_source_block.csv"
-    require_new(annotated_path)
-    work.to_csv(annotated_path, index=False, encoding=CSV_EXCEL)
-
-    loo_audit = {}
+    loo_audit: dict = {}
+    tables: list[tuple[Path, pd.DataFrame]] = [
+        (args.out / "source_block_map.csv", block_map),
+        (args.out / "exposure_range_by_dataset.csv", exposure),
+        (args.out / "source_block_suggestions.csv", suggestions),
+        (args.out / "metadata_with_source_block.csv", work),
+    ]
     if args.loo is not None:
         loo = relabel_loo(read_identity_csv(args.loo), work, args.dataset_key)
-        loo_path = args.out / "loo_with_source.csv"
-        require_new(loo_path)
-        loo.to_csv(loo_path, index=False, encoding=CSV_EXCEL)
+        tables.append((args.out / "loo_with_source.csv", loo))
         loo_audit = loo_unbalanced(loo)
 
     audit = {
@@ -259,15 +252,17 @@ def main(argv: list[str] | None = None) -> int:
         "loo": loo_audit,
         "note": "Suggestions are not a merge. Freeze the map in the protocol.",
     }
-    audit_path = args.out.parent.joinpath("05_logs") / "exposure_variance.json"
     if "02_tables" in args.out.as_posix() or args.out.name == "02_tables":
-        logs = args.out.parent / "05_logs"
-        logs.mkdir(parents=True, exist_ok=True)
-        audit_path = logs / "exposure_variance.json"
+        audit_path = args.out.parent / "05_logs" / "exposure_variance.json"
     else:
         audit_path = args.out / "exposure_variance.json"
-    require_new(audit_path)
-    audit_path.write_text(json.dumps(audit, indent=2), encoding="utf-8")
+
+    def write(partials: list[Path]) -> None:
+        for partial, (_, table) in zip(partials, tables):
+            table.to_csv(partial, index=False, encoding=CSV_EXCEL)
+        partials[-1].write_text(json.dumps(audit, indent=2), encoding="utf-8")
+
+    publish_new_files([path for path, _ in tables] + [audit_path], write)
     print(f"source blocks: {audit['n_source_blocks']} from {audit['n_datasets']} datasets")
     if not suggestions.empty:
         print(f"sibling suggestions: {len(suggestions)} pair(s) - protocol must freeze the merge")

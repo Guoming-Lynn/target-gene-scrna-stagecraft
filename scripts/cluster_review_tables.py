@@ -25,8 +25,11 @@ import sys
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
 
-from stagecraft.io import CSV_EXCEL
+_ensure_repo_on_path(__file__)
+
+from stagecraft.io import CSV_EXCEL, publish_new_files
 
 import numpy as np
 import pandas as pd
@@ -181,7 +184,7 @@ def cluster_qc(
     )
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("h5ad")
     p.add_argument("--leiden-key", required=True)
@@ -199,10 +202,9 @@ def main() -> int:
         default="",
         help="comma-separated symbols dropped from annotation worksheets (e.g. TARGET_GENE)",
     )
-    args = p.parse_args()
+    args = p.parse_args(argv)
 
     out = args.out
-    out.mkdir(parents=True, exist_ok=True)
     adata = ad.read_h5ad(args.h5ad)
     if args.leiden_key not in adata.obs:
         raise SystemExit(f"missing obs column {args.leiden_key}")
@@ -214,21 +216,16 @@ def main() -> int:
 
     mark = markers(adata, args.leiden_key, args.n_genes)
     mark.insert(0, "leiden_key", args.leiden_key)
-    mark.to_csv(out / f"{args.leiden_key}_top50.csv", index=False, encoding=CSV_EXCEL)
     display = mark.copy()
+    strict_table = None
     if args.strict_positive:
         display = strict_positive(display)
-        display.to_csv(
-            out / f"{args.leiden_key}_top50_strict_positive.csv",
-            index=False,
-            encoding=CSV_EXCEL,
-        )
+        strict_table = display.copy()
     exclude = {g.strip().upper() for g in args.exclude_genes.split(",") if g.strip()}
     if exclude:
         display = display.loc[~display["gene"].astype(str).str.upper().isin(exclude)]
         display["rank"] = display.groupby("cluster", observed=True).cumcount() + 1
     top20 = display.loc[display["rank"] <= 20].copy()
-    top20.to_csv(out / f"{args.leiden_key}_top20.csv", index=False, encoding=CSV_EXCEL)
 
     sizes = (
         adata.obs[args.leiden_key]
@@ -248,14 +245,9 @@ def main() -> int:
     compact = sizes.merge(compact, on="cluster", how="left")
     compact["top20_markers"] = compact["top20_markers"].fillna("")
     compact["proposed_label"] = ""
-    compact[["cluster", "n_cells", "top20_markers", "proposed_label"]].to_csv(
-        out / f"{args.leiden_key}_top20_by_cluster.csv",
-        index=False,
-        encoding=CSV_EXCEL,
-    )
+    compact_out = compact[["cluster", "n_cells", "top20_markers", "proposed_label"]]
 
     qc = cluster_qc(adata, args.leiden_key, top20, lineage, target)
-    qc.to_csv(out / f"{args.leiden_key}_cluster_qc.csv", index=False, encoding=CSV_EXCEL)
 
     lines = [
         f"# Marker annotation worksheet: {args.leiden_key}",
@@ -280,9 +272,25 @@ def main() -> int:
         lines.append(
             f"| {row.cluster} | {int(row.n_cells)} | {row.top20_markers} |  |"
         )
-    (out / f"{args.leiden_key}_marker_annotation.md").write_text(
-        "\n".join(lines) + "\n", encoding="utf-8"
-    )
+    key = args.leiden_key
+    sheets: list[tuple[Path, pd.DataFrame | str]] = [
+        (out / f"{key}_top50.csv", mark),
+        (out / f"{key}_top20.csv", top20),
+        (out / f"{key}_top20_by_cluster.csv", compact_out),
+        (out / f"{key}_cluster_qc.csv", qc),
+        (out / f"{key}_marker_annotation.md", "\n".join(lines) + "\n"),
+    ]
+    if strict_table is not None:
+        sheets.append((out / f"{key}_top50_strict_positive.csv", strict_table))
+
+    def write(partials: list[Path]) -> None:
+        for partial, (_, payload) in zip(partials, sheets):
+            if isinstance(payload, str):
+                partial.write_text(payload, encoding="utf-8")
+            else:
+                payload.to_csv(partial, index=False, encoding=CSV_EXCEL)
+
+    publish_new_files([path for path, _ in sheets], write)
     print(f"wrote {out}")
     return 0
 

@@ -1,11 +1,9 @@
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from check_environment import main as environment_main
 from part5_verdict import guarded_verdict
 from part6_verdict import main as verdict_main

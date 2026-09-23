@@ -1,5 +1,4 @@
 import hashlib
-import sys
 import tempfile
 import unittest
 import zipfile
@@ -9,7 +8,6 @@ from unittest.mock import patch
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'scripts'))
 import package_skill
 import part6_eligibility
 import part6_endpoints

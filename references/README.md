@@ -8,6 +8,7 @@ selected part. Do not preload every file.
 | Document | Use |
 |---|---|
 | [start-here.md](start-here.md) | Choose the next part from existing artifacts |
+| [cli-catalog.md](cli-catalog.md) | Helper command examples |
 | [glossary.md](glossary.md) | Terms used in gates and verdicts |
 | [pipeline-map.md](pipeline-map.md) | Part order, stop rules, anti-patterns |
 | [research-validity.md](research-validity.md) | Authoritative scientific contract |

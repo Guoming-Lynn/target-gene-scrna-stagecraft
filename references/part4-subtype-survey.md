@@ -93,6 +93,9 @@ Starting freeze for the forecast (amend in the protocol):
 | log2(CPM+1) sd | ≥ 0.15 | same | (with detection) |
 | Datasets / source_blocks | ≥ 2 | 1 with range → `WITHIN_SOURCE_RANGE` | — |
 
+Part 5 formal eligibility requires ≥ 3 datasets or source blocks. A Part 4
+forecast with only 2 datasets does not by itself open a Part 5 formal arm.
+
 These detection and log2(CPM+1) floors are Part 4 forecast gates. Part 5
 eligibility uses 0.5 on `jeffreys_per_10pct` unless the protocol amends it.
 See [source-dependence.md](source-dependence.md).

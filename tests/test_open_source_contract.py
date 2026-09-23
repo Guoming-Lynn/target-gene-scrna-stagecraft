@@ -1,13 +1,10 @@
 import ast
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import stagecraft
 import check_stage_layout
@@ -117,6 +114,26 @@ class OpenSourceContract(unittest.TestCase):
             self.assertTrue((out / "02_tables" / "eligibility.csv").is_file())
             manifest = json.loads((out / "simulation_manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["status"], "MANIFEST_ONLY")
+
+    def test_multi_file_publish_removes_partials_after_a_writer_failure(self):
+        from stagecraft.io import publish_new_files, require_new
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            dest = root / "a.txt"
+
+            def write(partials):
+                partials[0].write_text("ok\n", encoding="utf-8")
+                raise RuntimeError("boom")
+
+            with self.assertRaises(RuntimeError):
+                publish_new_files([dest], write)
+            self.assertFalse(dest.exists())
+            self.assertEqual(list(root.iterdir()), [])
+            reserved = require_new(root / "b.txt")
+            self.assertEqual(reserved.read_bytes(), b"")
+            with self.assertRaises(SystemExit):
+                require_new(reserved)
 
 
 if __name__ == "__main__":

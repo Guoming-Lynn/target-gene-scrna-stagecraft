@@ -1,6 +1,5 @@
 """Small independent numerical oracles for data construction, including file I/O."""
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,7 +10,6 @@ import pandas as pd
 from scipy import sparse
 from scipy.io import mmread
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import part5_pseudobulk as pb
 import part5_source_blocks as sources
 import part6_axes as axes
@@ -140,7 +138,7 @@ class DataConstruction(unittest.TestCase):
             np.testing.assert_allclose(ranges.sd, [np.sqrt(2)]*2)
             self.assertEqual(ranges.n_donors.tolist(), [2, 2])
             (root / "map.yaml").write_text("A: STUDY\n")
-            with self.assertRaises(ValueError):
+            with self.assertRaises(SystemExit):
                 sources.main(argv)
 
     def test_axis_geometry_coincident_direction_and_heldout_invariance(self):
@@ -166,6 +164,21 @@ class DataConstruction(unittest.TestCase):
         cells.loc[1, "cell_id"] = "c0"
         with self.assertRaises(SystemExit):
             axes.build_axes(cls, cells, scores, min_side=1, min_cells=2, min_training=2)
+
+    def test_build_axes_stops_when_skipped_donors_exceed_the_fraction(self):
+        cells = pd.DataFrame({
+            "cell_id": [f"c{i}" for i in range(7)],
+            "dataset_donor_id": ["A", "A", "B", "B", "C", "D", "E"],
+        })
+        cls = np.array([[-1.0, 0], [1, 0], [-1, 0], [1, 0], [0, 1], [0, 1], [0, 1]])
+        scores = pd.Series([0, 1, 0, 1, 0, 0, 0])
+        with self.assertRaises(SystemExit):
+            axes.build_axes(cls, cells, scores, min_side=1, min_cells=2, min_training=1)
+        result, skipped = axes.build_axes(
+            cls, cells, scores, min_side=1, min_cells=2, min_training=1, max_skipped_fraction=1
+        )
+        self.assertEqual(sorted(result), ["A", "B"])
+        self.assertEqual(len(skipped), 3)
 
     def test_endpoint_coverage_target_exclusion_and_duplicate_rejection(self):
         args = dict(endpoint_id="E", role="primary", members=["TARGET_FEATURE", "A", "B", "C"],
@@ -203,6 +216,8 @@ class DataConstruction(unittest.TestCase):
             scores.drop(columns="cell_id").to_csv(root / "scores.csv", index=False)
             with self.assertRaises(SystemExit):
                 axes.main(argv)
+            with self.assertRaises(SystemExit):
+                axes.main(["--cls", "x.npy", "--cells", "c.csv", "--scores", "s.csv", "--endpoint", "E", "--out", str(root / "axes")])
 
     def test_token_classes_and_cap_boundary_with_string_booleans(self):
         frame = pd.DataFrame({"cell_id": list("abcdef"), "raw_count": [1, 0, 1, 1, 0, 1],

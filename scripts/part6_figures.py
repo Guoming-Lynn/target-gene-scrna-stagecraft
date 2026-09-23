@@ -25,9 +25,11 @@ import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 _ROOT = SCRIPT_DIR.parent
-for _path in (str(_ROOT), str(SCRIPT_DIR)):
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
+
+_ensure_repo_on_path(__file__)
 
 from plotting_style import apply_publication_style, figure_size, load_plotting_config, save_figure as _save_figure  # noqa: E402
 from part6_sign_tests import median_order_statistic_interval  # noqa: E402

@@ -25,6 +25,7 @@ quickstart.py
 references/calibration-and-provenance.md
 references/checkpoint-review-template.md
 references/claim-boundaries.md
+references/cli-catalog.md
 references/evidence-and-verdicts.md
 references/figure-contract.md
 references/figure-statistics-contract.md

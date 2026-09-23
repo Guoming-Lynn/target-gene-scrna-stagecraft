@@ -1,10 +1,7 @@
-import sys
 import unittest
-from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from part5_eligibility import design_matrix, flag_arm
 from part6_sign_tests import sign_tests
 

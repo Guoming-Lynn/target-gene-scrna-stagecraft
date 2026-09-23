@@ -375,7 +375,10 @@ tokenized cells:
    unweighted mean.
 2. Inside d, sort by score; ties by `cell_id`. Top and bottom size
    `ceil(0.25 × n)` , each ≥ 3. If that fails, donor d is
-   `NOT_ESTIMABLE` for E.
+   `NOT_ESTIMABLE` for E and is listed in the axis sidecar.
+   If skipped donors are more than half of the donors in the cell table
+   (`--max-skipped-fraction`, default 0.5), the helper stops even when
+   enough axes remain.
 3. L2-normalize each cell CLS.
 4. `a(d,E) = L2[ mean(CLS_top) − mean(CLS_bottom) ]`
 5. For cell i in donor d:

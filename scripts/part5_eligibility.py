@@ -23,7 +23,11 @@ import pandas as pd
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
 
+_ensure_repo_on_path(__file__)
+
+from stagecraft import EXIT_GATE, stop  # noqa: E402
 from stagecraft.io import CSV_EXCEL, exit_reason, parse_bool_column, read_identity_csv, require_new
 
 
@@ -130,7 +134,7 @@ def evaluate(
 ) -> pd.DataFrame:
     work = meta.loc[parse_bool_column(meta["eligible"], "eligible")].copy() if "eligible" in meta.columns else meta.copy()
     if work.empty:
-        raise SystemExit("no eligible units")
+        stop("no eligible units", EXIT_GATE)
     rows = []
     groups = [(arm_key, "ALL", work)] if arm_key not in work.columns else [
         (arm_key, str(name), sub) for name, sub in work.groupby(arm_key, observed=True, sort=False)

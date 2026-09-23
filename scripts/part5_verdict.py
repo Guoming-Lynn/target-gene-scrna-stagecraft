@@ -17,10 +17,11 @@ from pathlib import Path
 from typing import Any, Mapping
 
 _ROOT = Path(__file__).resolve().parents[1]
-_SCRIPTS = Path(__file__).resolve().parent
-for _path in (str(_ROOT), str(_SCRIPTS)):
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
+
+_ensure_repo_on_path(__file__)
 
 from protocol_chronology import check_chronology
 from stagecraft.io import load_yaml_rows, require_new

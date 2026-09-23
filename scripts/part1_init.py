@@ -14,6 +14,9 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
+
+_ensure_repo_on_path(__file__)
 
 from stagecraft import EXIT_OK  # noqa: E402
 from stagecraft.io import require_new  # noqa: E402

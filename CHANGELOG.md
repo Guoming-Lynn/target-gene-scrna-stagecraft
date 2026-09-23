@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## [2.2.1] - 2026-09-23
+
+### Fixed
+- Part 5 reads donor, cell, and gene identifiers as text in R, and Part 4 figure tables use the same identity reader.
+- Multi-file helpers write partials and rename them only after every file succeeds. `require_new` reserves the path exclusively.
+- `part5_source_blocks.py` rejects an incomplete source map before writing. `cluster_review_tables.py` refuses to overwrite review sheets.
+- `part6_axes.py` requires a `.npz` path, records skips, and stops when skipped donors exceed `--max-skipped-fraction` (default 0.5).
+- Scientific stops for an empty eligible set, a frozen endpoint hash, too few donor axes, and an enlarged sign-test family exit 2.
+
+### Changed
+- Script imports go through `ensure_repo_on_path`. Helper commands are listed in `references/cli-catalog.md`.
+- Linux Python 3.11 CI installs the built wheel in a clean virtualenv and uploads the quickstart output.
+
 ## [2.2.0] - 2026-09-23
 
 ### Fixed

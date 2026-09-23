@@ -21,8 +21,11 @@ import pandas as pd
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
 
-from stagecraft.io import CSV_EXCEL  # noqa: E402
+_ensure_repo_on_path(__file__)
+
+from stagecraft.io import CSV_EXCEL, publish_new_files  # noqa: E402
 
 try:
     import scanpy as sc
@@ -90,17 +93,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     counts = counts.sort_values(["parent_cluster", "child_cluster"], key=_sort_id)
     orphan = args.out.with_name(args.out.stem + "_barcode_orphans.csv")
-    for path in (args.out, orphan):
-        if path.exists():
-            raise SystemExit(f"Refusing to overwrite: {path}")
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    counts.to_csv(args.out, index=False, encoding=CSV_EXCEL)
-    pd.DataFrame(
+    orphans = pd.DataFrame(
         {
             "barcode": only_parent + only_child,
             "where": (["parent_only"] * len(only_parent)) + (["child_only"] * len(only_child)),
         }
-    ).to_csv(orphan, index=False, encoding=CSV_EXCEL)
+    )
+
+    def write(partials: list[Path]) -> None:
+        counts.to_csv(partials[0], index=False, encoding=CSV_EXCEL)
+        orphans.to_csv(partials[1], index=False, encoding=CSV_EXCEL)
+
+    publish_new_files([args.out, orphan], write)
     print(
         f"wrote {args.out} ({len(counts)} parent×child cells; "
         f"{len(only_parent)} parent-only barcodes, {len(only_child)} child-only)"

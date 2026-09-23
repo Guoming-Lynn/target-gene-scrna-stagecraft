@@ -23,6 +23,17 @@ unlikely_arm <- readLines(
 source(file.path(script_dir, "part5_model_audit.R"))
 source(file.path(script_dir, "design_diagnostics.R"))
 
+read_identity_csv <- function(path) {
+  header <- names(read.csv(path, nrows = 0L, check.names = FALSE, fileEncoding = "UTF-8-BOM"))
+  identity <- intersect(
+    c("dataset", "donor_id", "dataset_donor_id", "unit_id", "cell_id", "omitted_donor", "gene", "source_block"),
+    header
+  )
+  args <- list(path, stringsAsFactors = FALSE, check.names = FALSE, fileEncoding = "UTF-8-BOM")
+  if (length(identity)) args$colClasses <- setNames(rep("character", length(identity)), identity)
+  do.call(read.csv, args)
+}
+
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1L) stop("usage: Rscript part5_run_models.R analysis_config.yaml")
 cfg_path <- normalizePath(args[[1]], winslash = "/", mustWork = TRUE)
@@ -74,10 +85,8 @@ primary_exposure <- if (!is.null(cfg$exposure$primary)) cfg$exposure$primary els
 alt_exposure <- cfg$exposure$alternative
 drop_single <- isTRUE(cfg$design$drop_single_level)
 
-meta <- read.csv(file.path(pb, "metadata.csv"), stringsAsFactors = FALSE,
-                 check.names = FALSE, fileEncoding = "UTF-8-BOM")
-genes <- read.csv(file.path(pb, "genes.csv"), stringsAsFactors = FALSE,
-                  check.names = FALSE, fileEncoding = "UTF-8-BOM")
+meta <- read_identity_csv(file.path(pb, "metadata.csv"))
+genes <- read_identity_csv(file.path(pb, "genes.csv"))
 counts <- readMM(file.path(pb, "counts.mtx"))
 stopifnot(nrow(counts) == nrow(genes), ncol(counts) == nrow(meta))
 if (!"unit_id" %in% names(meta) || anyNA(meta$unit_id) || anyDuplicated(meta$unit_id)) stop("Unique unit_id required")
@@ -85,8 +94,7 @@ if (anyNA(genes$gene) || anyDuplicated(genes$gene)) stop("Unique gene names requ
 rownames(counts) <- genes$gene
 colnames(counts) <- meta$unit_id
 if (file.exists(file.path(tables, "metadata_with_source_block.csv"))) {
-  annotated <- read.csv(file.path(tables, "metadata_with_source_block.csv"),
-                        check.names = FALSE, fileEncoding = "UTF-8-BOM")
+  annotated <- read_identity_csv(file.path(tables, "metadata_with_source_block.csv"))
   if (!"unit_id" %in% names(annotated) || anyDuplicated(annotated$unit_id)) stop("Unique annotated unit_id required")
   idx <- match(annotated$unit_id, meta$unit_id)
   if (anyNA(idx)) stop("Source metadata contains unknown units")

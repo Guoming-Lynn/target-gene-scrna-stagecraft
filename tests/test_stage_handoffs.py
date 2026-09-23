@@ -1,5 +1,4 @@
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,7 +7,6 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from part3_prepare_removal import clean_analysis_state, load_decisions, partition, main as removal_main
 from part4_identifiability import identifiability_table
 from project_arm_inventory import inventory

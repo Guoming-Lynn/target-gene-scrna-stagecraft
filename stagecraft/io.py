@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Sequence
 
-# Human-facing review worksheets opened in Excel. Machine tables use UTF-8.
+# UTF-8 with BOM. Part 5 tables are read by R with fileEncoding = "UTF-8-BOM",
+# and the same encoding opens cleanly in Excel. CSV_MACHINE is UTF-8 without
+# a BOM for text that is neither an R input nor a review sheet.
 CSV_EXCEL = "utf-8-sig"
 CSV_MACHINE = "utf-8"
 IDENTITY_COLUMNS = (
@@ -26,19 +29,76 @@ def repo_root_from_script(script_file: str) -> Path:
 
 
 def ensure_repo_on_path(script_file: str) -> Path:
-    root = repo_root_from_script(script_file)
-    text = str(root)
-    if text not in sys.path:
-        sys.path.insert(0, text)
+    """Add the repository root and the script directory to ``sys.path``.
+
+    The script directory stays ahead of the repository root so sibling
+    modules resolve before an unrelated installed package of the same name.
+    """
+    script = Path(script_file).resolve()
+    root = script.parents[1]
+    for path in (root, script.parent):
+        text = str(path)
+        if text not in sys.path:
+            sys.path.insert(0, text)
     return root
 
 
 def require_new(path: Path) -> Path:
+    """Reserve a new file. A concurrent writer loses instead of overwriting."""
     path = Path(path)
     if path.exists():
         raise SystemExit(f"Refusing to overwrite: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        raise SystemExit(f"Refusing to overwrite: {path}") from None
+    os.close(fd)
     return path
+
+
+def _partial_path(path: Path) -> Path:
+    """Sibling partial that keeps the original suffix.
+
+    Matrix Market writers only emit a banner when the path ends in ``.mtx``.
+    """
+    if path.suffix:
+        return path.with_name(path.stem + ".partial" + path.suffix)
+    return path.with_name(path.name + ".partial")
+
+
+def publish_new_files(paths: Sequence[Path], write: Callable[[list[Path]], None]) -> None:
+    """Write every file to a sibling partial, then rename the set into place.
+
+    Existence is checked before any final path is created. A failure deletes
+    partials and leaves finals that were not yet renamed untouched.
+    """
+    finals = [Path(path) for path in paths]
+    if len(finals) != len(set(finals)):
+        raise SystemExit("Refusing to publish duplicate output paths")
+    partials = [_partial_path(path) for path in finals]
+    for path in (*finals, *partials):
+        if path.exists():
+            raise SystemExit(f"Refusing to overwrite: {path}")
+    for path in finals:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    opened: list[Path] = []
+    try:
+        for partial in partials:
+            fd = os.open(partial, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            opened.append(partial)
+        write(partials)
+        missing = [path.name for path in partials if not path.is_file()]
+        if missing:
+            raise SystemExit(f"Partial output was not written: {missing}")
+        for partial, final in zip(partials, finals):
+            os.rename(partial, final)
+            opened.remove(partial)
+    except BaseException:
+        for partial in opened:
+            partial.unlink(missing_ok=True)
+        raise
 
 
 def require_yaml():

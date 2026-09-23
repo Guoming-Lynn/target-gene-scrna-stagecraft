@@ -1,4 +1,6 @@
 """Run helper smoke tests; does not execute a formal R or Geneformer analysis."""
+from __future__ import annotations
+
 import argparse
 import json
 import subprocess

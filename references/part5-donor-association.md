@@ -134,9 +134,14 @@ Alternative scale: unit `log2(CPM+1)` of the same gene, optionally
 z-scored on the **full** eligible cohort and then frozen for every
 subset (so holdout coefficients stay on one scale).
 
-If Spearman(detection, log2CPM) at eligible units ≥ 0.9, tag
-`COLLINEAR_SCALES`. The second model is a scale check. It is not a second
+If Spearman(detection, log2CPM) at eligible units has `|ρ| ≥ 0.9`, Part 4 tags
+`COLLINEAR_SCALES`. Part 5 writes `COLLINEARITY_REVIEW_REQUIRED` only when the
+exposure Spearman is greater than `diagnostics.rho_review` (default 0.9), a
+strict `>`. The second model is a scale check. It is not a second
 study and cannot lift a source-dependence ceiling.
+
+Part 4's forecast allows a formal flag from ≥ 2 datasets. This table's formal
+gate is ≥ 3 datasets or source blocks.
 
 ### Depth and confound
 
@@ -164,6 +169,7 @@ the design that will actually be fit**.
 | Eligible units | ≥ 12 | ≥ 8 | `< 8` → do not fit as discovery |
 | Datasets / source_blocks | ≥ 3 | ≥ 2 if protocol allows | 1 unless protocol is explicitly single-source |
 | Residual df | ≥ 6 | ≥ 4 | below → `NOT_ESTIMABLE` |
+| Holdout fit floor | `min_rdf_holdout` 3 | same value | below the floor → `NOT_ESTIMABLE` |
 | Design | full rank | full rank | rank-deficient → `NOT_ESTIMABLE` |
 | Exposure | IQR / sd large enough to identify a slope | same, or label `NO_EXPOSURE_RANGE` | sd ≈ 0 |
 

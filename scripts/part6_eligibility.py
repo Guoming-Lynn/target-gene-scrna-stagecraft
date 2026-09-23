@@ -20,8 +20,11 @@ import pandas as pd
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
 
-from stagecraft.io import read_identity_csv  # noqa: E402
+_ensure_repo_on_path(__file__)
+
+from stagecraft.io import publish_new_files, read_identity_csv  # noqa: E402
 
 DEFAULT_GATES = {
     "KO": 5,
@@ -120,15 +123,15 @@ def main(argv: list[str] | None = None) -> int:
         read_identity_csv(args.cells),
         gates={"KO": args.ko_min, "OE": args.oe_min, "OE_SYMMETRY": args.ko_min},
     )
-    args.out.parent.mkdir(parents=True, exist_ok=True)
     eligible_out = args.out.with_name("donor_effects_eligible.csv")
     if args.out.resolve() == eligible_out.resolve():
         raise SystemExit("Ledger and eligible output paths must differ")
-    for path in (args.out, eligible_out):
-        if path.exists():
-            raise SystemExit(f"Refusing to overwrite: {path}")
-    ledger.to_csv(args.out, index=False)
-    eligible.to_csv(eligible_out, index=False)
+
+    def write(partials: list[Path]) -> None:
+        ledger.to_csv(partials[0], index=False)
+        eligible.to_csv(partials[1], index=False)
+
+    publish_new_files([args.out, eligible_out], write)
     print(f"n_ledger={len(ledger)} n_eligible_rows={len(eligible)}")
     return 0
 

@@ -24,8 +24,8 @@ Part 6 helper tests do not run Geneformer or distribute any checkpoint. Keep mod
 
 ## Pull requests
 
-Release archives include only the exact paths in `release-files.txt`.
-When adding source files, review their contents and update that manifest.
+The skill archive includes only the exact paths in `skill-files.txt` and omits `.github/`.
+`release-files.txt` is the full repository whitelist. When adding source files, review their contents and update both manifests.
 Never list local data, credentials, analysis outputs, or model weights.
 
 Describe the concrete behavior before and after the change, the applicable scientific boundary, and validation performed. Do not use internal LODO results as external replication.

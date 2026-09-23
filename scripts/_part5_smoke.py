@@ -10,8 +10,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
+
+_ensure_repo_on_path(__file__)
 
 from part5_eligibility import design_matrix, evaluate, residual_df  # noqa: E402
 from part5_pseudobulk import jeffreys_per_10pct, zscore_full  # noqa: E402

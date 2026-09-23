@@ -23,10 +23,13 @@ import pandas as pd
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
 
-from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
+_ensure_repo_on_path(__file__)
+
+from stagecraft import EXIT_GATE, EXIT_OK, stop  # noqa: E402
 from stagecraft.hashing import sha256_file
-from stagecraft.io import load_yaml, require_new
+from stagecraft.io import load_yaml, publish_new_files
 
 
 def read_members(path: Path) -> list[str]:
@@ -96,7 +99,7 @@ def evaluate_sets(
         digest = sha256_file(path)
         expected = str(spec.get("sha256") or "").strip()
         if expected and expected.lower() != "replace" and digest != expected:
-            raise SystemExit(f"hash mismatch for {path}: {digest} != {expected}")
+            stop(f"hash mismatch for {path}: {digest} != {expected}", EXIT_GATE)
         rows.append(
             coverage_row(
                 endpoint_id=str(spec["id"]),
@@ -138,16 +141,20 @@ def main(argv: list[str] | None = None) -> int:
         specs.append(item)
     visible = {line.strip() for line in args.model_genes.read_text(encoding="utf-8").splitlines() if line.strip()}
     table = evaluate_sets(specs, visible, args.target)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
     members_out = args.out.with_name(args.out.stem + "_members.csv")
-    for path in (args.out, members_out):
-        require_new(path)
-    table.drop(columns=["visible_genes"]).to_csv(args.out, index=False)
+    if args.out.resolve() == members_out.resolve():
+        raise SystemExit("Coverage and members output paths must differ")
     long_rows = []
     for row in table.itertuples(index=False):
         for gene in str(row.visible_genes).split(",") if row.visible_genes else []:
             long_rows.append({"endpoint": row.endpoint, "role": row.role, "gene": gene})
-    pd.DataFrame(long_rows).to_csv(members_out, index=False)
+    members = pd.DataFrame(long_rows, columns=["endpoint", "role", "gene"])
+
+    def write(partials: list[Path]) -> None:
+        table.drop(columns=["visible_genes"]).to_csv(partials[0], index=False)
+        members.to_csv(partials[1], index=False)
+
+    publish_new_files([args.out, members_out], write)
     if primary_blocked(table):
         print("PRIMARY COVERAGE FAILED - chapter STOPPED")
         return EXIT_GATE

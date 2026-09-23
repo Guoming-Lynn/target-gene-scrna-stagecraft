@@ -1,9 +1,5 @@
-import pathlib
-import sys
 import unittest
 import pandas as pd
-
-sys.path.insert(0, str(pathlib.Path(__file__).parents[1] / "scripts"))
 
 from part6_smoke_gate import judge_smoke
 

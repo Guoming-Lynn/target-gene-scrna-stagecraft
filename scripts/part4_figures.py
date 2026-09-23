@@ -13,17 +13,17 @@ import argparse
 import sys
 from pathlib import Path
 
-import pandas as pd
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 _ROOT = SCRIPT_DIR.parent
-for _path in (str(_ROOT), str(SCRIPT_DIR)):
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
+
+_ensure_repo_on_path(__file__)
 
 from part2_figures import render_catalog  # noqa: E402
 from part4_identifiability import identifiability_table, plot_identifiability  # noqa: E402
-from stagecraft.io import CSV_EXCEL  # noqa: E402
+from stagecraft.io import CSV_EXCEL, read_identity_csv  # noqa: E402
 from plotting_style import apply_publication_style, load_color_map, load_plotting_config  # noqa: E402
 
 try:
@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     unit_csv = out / "source_data" / "unit_summary.csv"
-    units = pd.read_csv(unit_csv)
+    units = read_identity_csv(unit_csv)
     source_key = args.source_key.strip() or args.dataset_key
     if source_key not in units.columns:
         raise SystemExit(f"unit table missing {source_key}")

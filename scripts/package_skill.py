@@ -1,4 +1,6 @@
 """Package only the explicitly reviewed files in release-files.txt."""
+from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
@@ -8,6 +10,9 @@ import yaml
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
+
+_ensure_repo_on_path(__file__)
 
 from stagecraft.hashing import sha256_bytes  # noqa: E402
 
@@ -57,7 +62,7 @@ def package(root, output_dir=None, manifest="release-files.txt"):
     return output
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--out-dir",

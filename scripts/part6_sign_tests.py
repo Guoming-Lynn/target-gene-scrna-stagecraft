@@ -21,7 +21,11 @@ import pandas as pd
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E402
 
+_ensure_repo_on_path(__file__)
+
+from stagecraft import EXIT_GATE, stop  # noqa: E402
 from stagecraft.io import parse_bool_column, read_identity_csv  # noqa: E402
 
 
@@ -152,9 +156,10 @@ def sign_tests(
     result = pd.DataFrame(records)
     declared = int(family_size)
     if len(result) > declared:
-        raise SystemExit(
+        stop(
             f"constructed {len(result)} family cells but family_size={declared}. "
-            "Do not silently enlarge the family."
+            "Do not silently enlarge the family.",
+            EXIT_GATE,
         )
     if len(result) < declared:
         # Pad is not added here; BH still uses declared size (conservative).
