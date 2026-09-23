@@ -62,6 +62,7 @@ scripts/calibrate_part5_null.R
 scripts/check_environment.py
 scripts/check_protocol.py
 scripts/check_stage_layout.py
+scripts/claim_lint.py
 scripts/cluster_review_tables.py
 scripts/design_diagnostics.R
 scripts/demo_toy_run.py
@@ -106,6 +107,8 @@ scripts/protocol_chronology.py
 scripts/simulation_contract.py
 scripts/validate_figure_manifest.py
 stagecraft/__init__.py
+stagecraft/claim_rules.yaml
+stagecraft/claims.py
 stagecraft/hashing.py
 stagecraft/io.py
 stagecraft/numeric.py

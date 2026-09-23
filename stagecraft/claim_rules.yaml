@@ -1,0 +1,103 @@
+# Review flags derived from references/claim-boundaries.md.
+# A match is a prompt to rewrite the sentence, not a verdict.
+negation_window: 40
+negations_en: ["not", "no", "never", "cannot", "can't", "without", "nor", "neither"]
+negations_zh: ["不", "未", "非", "没有", "不能", "不得", "禁止"]
+rules:
+  - id: independent_replication
+    category: replication
+    pattern: '\bindependent(ly)?\s+(replicat|validat|confirm)\w*|独立(重复|复现|验证)'
+    allowed: "N donor-units with the source structure stated; internal LODO is not independent replication"
+    example: "The association was independently replicated."
+  - id: cross_dataset_consistent
+    category: replication
+    pattern: '\bcross[- ]?(dataset|study|cohort)\s+(consisten|replicat|validat)\w*|跨(数据集|研究|队列)(一致|重复|验证)'
+    allowed: "Within-dataset or within-source result, with the source-block holdout stated"
+    example: "We observed cross-dataset consistency."
+  - id: donor_fraction_as_replication
+    category: replication
+    pattern: '\b(\d+)\s*/\s*\1\s*(donors?|供体)'
+    allowed: "Direction consistency inside this object; not replication"
+    example: "The sign held in 12/12 donors."
+  - id: cells_as_power
+    category: replication
+    pattern: '\bcells?\b[^.。]{0,60}\b(well[- ])?powered\b|\bpowered\b[^.。]{0,60}\bcells\b'
+    allowed: "Power depends on donor-units and residual df, not cell count"
+    example: "With 100,000 cells the study is well powered."
+  - id: accessions_as_studies
+    category: replication
+    pattern: '\bindependent\s+(cohorts?|studies|datasets?)\b|独立(队列|研究|数据集)'
+    allowed: "Name the source-block map; accession count does not make studies independent"
+    example: "Three independent cohorts were analysed."
+  - id: causal_language
+    category: causality
+    pattern: '\b(drives?|driving|drove|causes?|caused|causing|causal(ly)?|regulates?|regulated|regulating)\b|驱动|导致|因果'
+    allowed: "Association between exposure and outcome at the donor-unit level"
+    example: "The target gene drives fibrosis."
+  - id: proof_language
+    category: causality
+    pattern: '\b(proves?|proven|proving|demonstrates? that|confirms? that)\b|证明|证实'
+    allowed: "Consistent with; associated with; under the frozen protocol"
+    example: "This proves the mechanism."
+  - id: validated_claim
+    category: evidence
+    pattern: '\b(validated|calibrated)\b'
+    allowed: "calibration_status and external_validation are reported separately; claim neither"
+    example: "The result is validated."
+  - id: virtual_ko_expression
+    category: part6
+    pattern: '\b(virtual|in[- ]?silico)\s+(KO|knock[- ]?outs?|perturbations?)\b[^.。]{0,60}\b(predicts?|reduces?|increases?|decreases?|lowers?|raises?)\b[^.。]{0,30}\b(expression|levels?)\b'
+    allowed: "Embedding shift along a frozen axis under a frozen model, cell sets named"
+    example: "Virtual KO reduces expression of the pathway."
+  - id: ko_oe_mirror
+    category: part6
+    pattern: '\bKO\b[^.。]{0,40}\bOE\b[^.。]{0,40}\b(mirror|paired|symmetric)\w*'
+    allowed: "KO and OE are separate populations; tag KO_OE_UNPAIRED when they differ"
+    example: "KO and OE form a paired mirror."
+  - id: cell_level_finding
+    category: methods
+    pattern: '\brank_genes_groups\b|\bWilcoxon\b[^.。]{0,60}\b(significant|DEGs?|differentially expressed)\b'
+    allowed: "Cell-level ranking is a screen; donor pseudobulk is the test"
+    example: "Wilcoxon found 300 significant DEGs."
+  - id: umap_distance
+    category: methods
+    pattern: '\bUMAP\b[^.。]{0,40}\b(distance|proximity|closeness|relatedness|related)\b'
+    allowed: "UMAP is display; use PAGA connectivity at a frozen threshold"
+    example: "UMAP distance shows the states are related."
+  - id: hub_mechanism
+    category: methods
+    pattern: '\bhubs?\b[^.。]{0,40}\bmechanis\w*'
+    allowed: "Topology on a frozen set; not a mechanism"
+    example: "The hub gene is the mechanism."
+  - id: communication_axis
+    category: methods
+    pattern: '\b(CellChat|CellPhoneDB|LIANA|NicheNet)\b[^.。]{0,60}\b(axis|mechanism|drives?)\b'
+    allowed: "Recurrent edge with donor-level estimability; not an experimental axis"
+    example: "CellChat identified the signalling axis."
+  - id: nonsignificant_as_absence
+    category: evidence
+    ignore_negation: true
+    pattern: '\bnon[- ]?significant\b[^.。]{0,40}\b(equivalen\w*|no effect|absent|falsif\w*)|\bnot\s+significant\w*[^.。]{0,40}\b(equivalen\w*|no effect|falsif\w*)'
+    allowed: "Report effect, CI and q; non-significance is not equivalence"
+    example: "The result was not significant and therefore equivalent."
+  - id: split_half_replication
+    category: evidence
+    pattern: '\bsplit[- ]?half\b[^.。]{0,40}\b(replicat|external|validat)\w*'
+    allowed: "Split-half consistency inside one study"
+    example: "Split-half replication confirmed the slope."
+  - id: forecast_as_association
+    category: evidence
+    pattern: '\bRANGE_OK\b[^.。]{0,60}\b(associat\w*|significant)\b'
+    allowed: "Part 4 RANGE_OK is a forecast; Part 5 still has to run"
+    example: "RANGE_OK shows a significant association."
+  - id: ceiling_upgrade
+    category: evidence
+    pattern: '\b(lifts?|upgrades?|overrides?|removes?)\b[^.。]{0,40}\b(ceiling|source[- ]?dependen\w*)'
+    allowed: "Orthogonal evidence does not change the replication ceiling"
+    example: "The treatment data lifts the ceiling."
+  - id: target_positive_label
+    category: identity
+    case_sensitive: true
+    pattern: '\b[A-Z][A-Z0-9-]{1,}\+\s+(subtype|cells?|population|macrophages?|fibroblasts?)\b'
+    allowed: "Name populations by lineage markers; keep TARGET_GENE out of labels"
+    example: "SPP1+ macrophages expanded."

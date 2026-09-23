@@ -48,7 +48,7 @@ Issues = "https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/issues"
 include = ["stagecraft*"]
 
 [tool.setuptools.package-data]
-stagecraft = ["*.txt"]
+stagecraft = ["*.txt", "*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
