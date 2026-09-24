@@ -22,7 +22,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 
 _ensure_repo_on_path(__file__)
 
-from protocol_chronology import check_chronology  # noqa: E402
+from protocol_chronology import OUTPUT_DIRS, check_chronology  # noqa: E402
 from stagecraft import EXIT_OK, EXIT_USAGE  # noqa: E402
 from stagecraft.io import publish_new_files  # noqa: E402
 
@@ -234,7 +234,7 @@ def inspect_stage(stage: Path, part: int, tables: str) -> dict:
         chronology = "FAILED: freeze receipt has no PROTOCOL.md or FROZEN_PROTOCOL.md"
     else:
         chronology = "NOT_VERIFIED"
-        if _has_files(stage / "03_pseudobulk") or _has_files(stage / tables):
+        if any(_has_files(stage / folder) for folder in OUTPUT_DIRS):
             warnings.append(
                 "Outputs exist without a freeze receipt; chronology is NOT_VERIFIED "
                 "and a new freeze would be refused."

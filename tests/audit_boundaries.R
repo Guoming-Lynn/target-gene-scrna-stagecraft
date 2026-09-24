@@ -16,6 +16,20 @@ t <- tab; t$status[t$subset=='LA'] <- 'NOT_ESTIMABLE'
 stopifnot(run(t)$source_dependent, !run(t)$formal_gates_pass)
 t <- tab; t$logFC[t$subset=='LA'] <- -.5
 stopifnot(run(t)$source_dependent, !run(t)$formal_gates_pass)
+extra <- tab[1, ]
+extra$gene <- 'H'
+missing <- rbind(tab, extra)
+for (name in c('LB', 'LC')) {
+  row <- extra
+  row$subset <- name
+  missing <- rbind(missing, row)
+}
+edge <- extra
+edge$model <- 'edgeR_QL'
+missing <- rbind(missing, edge)
+genes <- audit_models(missing, meta, cfg, list(), c(A='LA', B='LB', C='LC'), identity)$genes
+held <- genes[genes$gene == 'H', ]
+stopifnot(nrow(held) == 1L, held$lodo_n_not_tested == 1L, !held$robust_primary)
 m <- meta; m$dataset_donor_id <- NULL
 stopifnot(inherits(try(run(m=m),silent=TRUE),'try-error'))
 cat('AUDIT_BOUNDARIES_OK\n')

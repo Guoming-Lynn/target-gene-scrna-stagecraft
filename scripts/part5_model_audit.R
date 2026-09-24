@@ -23,9 +23,15 @@ audit_models <- function(tab, meta, cfg, subsets, lodo_names, resolve) {
   folds <- if (length(fold_rows)) do.call(rbind, fold_rows) else data.frame(subset=character(), held_out_block=character(), status=character(), rdf=numeric())
   evidence$lodo_all_same_sign <- rep(length(fold_names) > 0L, nrow(evidence))
   evidence$lodo_n_estimable <- integer(nrow(evidence))
+  # A fold that succeeded but did not carry the gene is a membership gap,
+  # not a sign flip. The gate stays strict; the counter names the reason.
+  evidence$lodo_n_not_tested <- integer(nrow(evidence))
   for (name in fold_names) {
     fold <- tab[tab$subset == name & tab$model == "limma_primary" & tab$status == "SUCCESS", , drop = FALSE]
     fc <- fold$logFC[match(evidence$gene, fold$gene)]
+    if (nrow(fold)) {
+      evidence$lodo_n_not_tested <- evidence$lodo_n_not_tested + as.integer(!(evidence$gene %in% fold$gene))
+    }
     evidence$lodo_n_estimable <- evidence$lodo_n_estimable + as.integer(is.finite(fc))
     evidence$lodo_all_same_sign <- evidence$lodo_all_same_sign & is.finite(fc) & sign(fc) == sign(evidence$logFC)
   }
@@ -101,6 +107,7 @@ audit_models <- function(tab, meta, cfg, subsets, lodo_names, resolve) {
     n_units=nrow(meta), n_donors=n_donors, n_blocks=n_blocks, donor_key=donor_key, block_key=block_key,
     n_datasets=length(unique(meta[[cfg$obs$dataset_key %||% "dataset"]])), n_source_blocks=length(blocks), rdf=rdf,
     n_robust_primary=sum(evidence$robust_primary),
+    lodo_gene_membership_gaps=sum(evidence$lodo_n_not_tested),
     evidence_ceiling=cfg$evidence_ceiling, tags=list(), reason="")
   # External diagnostics must provide measured flags; absence stays unknown.
   if (!is.null(cfg$audit_flags)) {

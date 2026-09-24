@@ -15,13 +15,25 @@ _ensure_repo_on_path(__file__)
 
 from stagecraft.hashing import sha256_file
 
+# Every directory a stage may write results into. A freeze receipt is only
+# meaningful if it can see all of them.
+OUTPUT_DIRS = (
+    "00_input_audit",
+    "02_tables",
+    "03_geneformer",
+    "03_pseudobulk",
+    "03_tables",
+    "05_controls",
+    "06_reports",
+)
+
 
 def check_chronology(protocol, stage_root, freeze=False):
     protocol, root = Path(protocol).resolve(), Path(stage_root).resolve()
     manifest = root / "00_protocol_manifest"
     receipt = manifest / "protocol_freeze.json"
     protocol.relative_to(root)
-    outputs = [p for folder in ("03_pseudobulk", "02_tables")
+    outputs = [p for folder in OUTPUT_DIRS
                for p in (root / folder).rglob("*") if p.is_file()]
     if freeze:
         if receipt.exists():

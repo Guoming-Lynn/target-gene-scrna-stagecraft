@@ -66,7 +66,8 @@ def donor_eligibility(
         raise SystemExit(f"cell effects missing columns: {sorted(missing)}")
     gates = gates or DEFAULT_GATES
     run = cells.copy()
-    run["success"] = run["run_status"].astype(str).eq("RUN") & np.isfinite(run["delta_axis"].astype(float))
+    status = run["run_status"].astype(str).str.strip().str.upper()
+    run["success"] = status.eq("RUN") & np.isfinite(run["delta_axis"].astype(float))
     group_cols = ["dataset_donor_id", "target_symbol", "perturbation", "analysis_population", "endpoint"]
     if run[["cell_id", *group_cols]].isna().any().any():
         raise SystemExit("Cell effects require nonmissing identities.")

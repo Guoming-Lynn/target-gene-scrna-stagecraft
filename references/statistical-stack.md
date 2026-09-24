@@ -97,6 +97,10 @@ Do not:
 - put LODO / threshold / leave-one-donor rows into the project FDR family
 - use a sensitivity model's q as a veto unless the protocol said it was a gate
 
+`gene_effects.csv` still carries a `q_bh` value on sensitivity rows. That number is BH within that subset only, not the declared discovery family.
+
+
+
 Non-significant ≠ equivalent. Do not "prove" an external signature false because an atlas contrast did not pass q.
 
 ## Collinearity and scores

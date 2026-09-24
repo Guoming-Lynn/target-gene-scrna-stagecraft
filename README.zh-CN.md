@@ -1,6 +1,6 @@
 # target-gene-scrna-stagecraft
 
-[English README](README.md) · 中文说明 · v2.3.1
+[English README](README.md) · 中文说明 · v2.3.2
 
 [![CI](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml)
 
@@ -62,7 +62,7 @@ python -m pip install -e .
 
 测试与 lint 另装 `requirements-dev.txt`。Part 5 还需要 R，以及 `Matrix`、`limma`、`edgeR`、`fgsea`、`statmod`、`jsonlite`、`yaml` 和 `digest`。Part 6 需要另建 Geneformer 环境。详细说明见 [INSTALL.md](INSTALL.md) 和 [R 依赖](references/r-requirements.md)。
 
-解释器选择与 Windows Conda 注意项也在 INSTALL.md。维护者基线见 [validated-environment.md](references/validated-environment.md)；CI 同时覆盖 Linux 与 macOS。
+解释器选择与 Windows Conda 注意项也在 INSTALL.md。维护者基线见 [validated-environment.md](references/validated-environment.md)；CI 同时覆盖 Linux、macOS 与 Windows。
 
 本项目也可以作为 AI skill 使用。请保持目录名为 `target-gene-scrna-stagecraft`，并将包含 `SKILL.md` 的目录挂载到 Codex、Cursor 或 Claude Code 对应的 skills 目录。路径表见英文 README。
 

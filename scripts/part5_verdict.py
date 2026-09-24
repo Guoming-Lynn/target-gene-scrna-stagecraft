@@ -162,9 +162,14 @@ def observed_chronology(audit_path: Path) -> str:
     stage = audit_path.resolve().parent
     if stage.name == "05_logs":
         stage = stage.parent
-    protocol = stage / "00_protocol_manifest" / "PROTOCOL.md"
-    receipt = stage / "00_protocol_manifest" / "protocol_freeze.json"
-    if not protocol.is_file() or not receipt.is_file():
+    manifest = stage / "00_protocol_manifest"
+    protocol = None
+    for name in ("PROTOCOL.md", "FROZEN_PROTOCOL.md"):
+        if (manifest / name).is_file():
+            protocol = manifest / name
+            break
+    receipt = manifest / "protocol_freeze.json"
+    if protocol is None or not receipt.is_file():
         return "NOT_VERIFIED"
     try:
         return str(check_chronology(protocol, stage))

@@ -30,7 +30,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 
 _ensure_repo_on_path(__file__)
 
-from stagecraft.io import parse_bool_column, read_identity_csv  # noqa: E402
+from stagecraft.io import CSV_EXCEL, parse_bool_column, publish_new_files, read_identity_csv  # noqa: E402
 
 CYCLE = {
     "MKI67", "TOP2A", "PCNA", "MCM2", "MCM3", "MCM4", "MCM5", "MCM6", "MCM7",
@@ -147,12 +147,12 @@ def main(argv: list[str] | None = None) -> int:
         read_identity_csv(args.genes), target=args.target, endpoint_union=union, excluded_genes=excluded, max_n=args.max_n
     )
     sidecar = args.out.with_name("control_candidates.csv")
-    for path in (args.out, sidecar):
-        if path.exists():
-            raise SystemExit(f"Refusing to overwrite: {path}")
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    selected.to_csv(args.out, index=False)
-    candidates.to_csv(sidecar, index=False)
+
+    def write(paths: list[Path]) -> None:
+        selected.to_csv(paths[0], index=False, encoding=CSV_EXCEL)
+        candidates.to_csv(paths[1], index=False, encoding=CSV_EXCEL)
+
+    publish_new_files([args.out, sidecar], write)
     print(f"n_controls={len(selected)} window={window}")
     if len(selected) < 5:
         print("control ranks are NOT_ESTIMABLE (<5)")

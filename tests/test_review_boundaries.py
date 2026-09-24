@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from part5_verdict import guarded_verdict, main as verdict_main
+from part5_verdict import guarded_verdict, main as verdict_main, observed_chronology
 from part6_sign_tests import median_order_statistic_interval, sign_tests
 from protocol_chronology import check_chronology
 from part6_controls import select_controls
@@ -74,6 +74,59 @@ class ReviewBoundaries(unittest.TestCase):
             os.utime(output, (1, 1))
             with self.assertRaises(ValueError):
                 check_chronology(protocol, root)
+
+    def test_freeze_refuses_when_part6_outputs_exist(self):
+        for folder in ("03_geneformer", "05_controls", "00_input_audit"):
+            with tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                protocol = root / "PROTOCOL.md"
+                protocol.write_text("protocol")
+                (root / folder).mkdir()
+                (root / folder / "artifact.txt").write_text("result")
+                with self.assertRaises(ValueError) as caught:
+                    check_chronology(protocol, root, freeze=True)
+                self.assertIn("stage artifacts", str(caught.exception))
+
+    def test_part6_artifact_predating_freeze_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            protocol = root / "PROTOCOL.md"
+            protocol.write_text("protocol")
+            check_chronology(protocol, root, freeze=True)
+            output = root / "03_tables" / "gene.csv"
+            output.parent.mkdir()
+            output.write_text("result")
+            os.utime(output, ns=(1, 1))
+            with self.assertRaises(ValueError):
+                check_chronology(protocol, root)
+
+    def test_frozen_protocol_name_is_verified(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            protocol = root / "00_protocol_manifest" / "FROZEN_PROTOCOL.md"
+            protocol.parent.mkdir(parents=True)
+            protocol.write_text("frozen analysis\n")
+            check_chronology(protocol, root, freeze=True)
+            audit = root / "05_logs" / "model_audit.json"
+            audit.parent.mkdir()
+            audit.write_text("{}\n", encoding="utf-8")
+            result = observed_chronology(audit)
+            self.assertNotEqual(result, "NOT_VERIFIED")
+            self.assertFalse(result.startswith("FAILED:"))
+
+    def test_protocol_md_wins_when_both_exist(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            manifest = root / "00_protocol_manifest"
+            manifest.mkdir(parents=True)
+            (manifest / "PROTOCOL.md").write_text("frozen analysis\n")
+            (manifest / "FROZEN_PROTOCOL.md").write_text("also frozen\n")
+            check_chronology(manifest / "PROTOCOL.md", root, freeze=True)
+            audit = root / "05_logs" / "model_audit.json"
+            audit.parent.mkdir()
+            audit.write_text("{}\n", encoding="utf-8")
+            result = observed_chronology(audit)
+            self.assertEqual(result, "LOCAL_SEQUENCE_CONSISTENT_NOT_TRUSTED_PREREGISTRATION")
 
     def test_verdict_reports_a_local_freeze_receipt(self):
         with tempfile.TemporaryDirectory() as temp:

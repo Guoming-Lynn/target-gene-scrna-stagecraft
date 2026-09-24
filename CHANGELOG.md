@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## [2.3.2] - 2026-09-24
+
+### Fixed
+- Part 5 holdout refits now test the gene universe frozen on the whole arm. A LODO, LOO, or within-dataset fold can fail on effect sign, not on gene membership. `gene_evidence.csv` gains `lodo_n_not_tested` and the audit gains `lodo_gene_membership_gaps`.
+- `WITHIN_*` sensitivity fits use `min_rdf_holdout` instead of the FULL `min_rdf_fit` floor.
+- A fit that cannot run `duplicateCorrelation` records `NO_BLOCK_FALLBACK` in its notes and `blocking.fallback` in `model_audit.json`.
+- Freeze chronology scans every stage output directory, including the Part 6 folders. A Part 6 stage can no longer claim a pre-output freeze after its artifacts exist.
+- `part5_verdict.py` verifies chronology for a stage frozen as `FROZEN_PROTOCOL.md`.
+- `part6_controls.py` and `part6_axes.py` publish their two outputs atomically. `part6_eligibility.py` accepts `run_status` in any case. `stage_report.py` ranks `robust_primary` written as `1` or a native boolean.
+- No statistical threshold changed. FULL-arm estimates are unchanged.
+
 ## [2.3.1] - 2026-09-23
 
 ### Fixed

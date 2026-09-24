@@ -28,7 +28,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 _ensure_repo_on_path(__file__)
 
 from stagecraft import EXIT_GATE, stop  # noqa: E402
-from stagecraft.io import read_identity_csv  # noqa: E402
+from stagecraft.io import publish_new_files, read_identity_csv  # noqa: E402
 
 
 def l2_normalize(vectors: np.ndarray, axis: int = -1, eps: float = 1e-12) -> np.ndarray:
@@ -185,12 +185,12 @@ def main(argv: list[str] | None = None) -> int:
         cls, cells, score_table[col], max_skipped_fraction=args.max_skipped_fraction
     )
     skipped_path = args.out.with_suffix(".skipped.json")
-    for path in (args.out, skipped_path):
-        if path.exists():
-            raise SystemExit(f"Refusing to overwrite: {path}")
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    np.savez(args.out, **{key: value for key, value in loo.items()})
-    skipped_path.write_text(json.dumps(skipped, indent=2) + "\n", encoding="utf-8")
+
+    def write(paths: list[Path]) -> None:
+        np.savez(paths[0], **dict(loo))
+        paths[1].write_text(json.dumps(skipped, indent=2) + "\n", encoding="utf-8")
+
+    publish_new_files([args.out, skipped_path], write)
     print(f"n_loo_axes={len(loo)} skipped={len(skipped)} wrote {args.out}")
     return 0
 

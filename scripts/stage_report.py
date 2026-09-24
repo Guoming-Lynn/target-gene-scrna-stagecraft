@@ -170,8 +170,13 @@ def _missing(relative: str) -> str:
     return f"`{relative}` not found; not reported."
 
 
+_TRUE_TOKENS = frozenset({"true", "1", "t", "yes"})
+
+
 def _true_mask(series: pd.Series) -> pd.Series:
-    return series.astype(str).str.upper().eq("TRUE")
+    if pd.api.types.is_bool_dtype(series):
+        return series.fillna(False).astype(bool)
+    return series.astype(str).str.strip().str.lower().isin(_TRUE_TOKENS)
 
 
 def _read_table(path: Path) -> pd.DataFrame:

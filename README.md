@@ -1,6 +1,6 @@
 # target-gene-scrna-stagecraft
 
-[中文说明](README.zh-CN.md) · English · v2.3.1
+[中文说明](README.zh-CN.md) · English · v2.3.2
 
 [![CI](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -72,7 +72,7 @@ and [R packages](references/r-requirements.md).
 
 Interpreter selection, Windows Conda, and Part 6 model paths: [INSTALL.md](INSTALL.md).
 The maintainer baseline is [validated-environment.md](references/validated-environment.md);
-CI also runs Linux and macOS. Copy `environment.example.yaml` into a stage
+CI also runs Linux, macOS, and Windows. Copy `environment.example.yaml` into a stage
 manifest and replace placeholders before a formal run.
 
 ## Use it as a skill or CLI

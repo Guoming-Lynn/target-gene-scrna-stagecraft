@@ -143,6 +143,15 @@ if (mode == "joint_common_slope" && !group_key %in% cfg$design$categorical) stop
 # This runs once on all eligible units in the frozen arm. Every subset inherits it.
 meta <- freeze_standardized_covariates(meta, cfg$exposure$freeze_z_on)
 
+# The gene universe is frozen on the whole arm, then reused by every
+# holdout refit. A fold must be able to fail on sign, not on membership.
+frozen_genes <- local({
+  y0 <- DGEList(counts = counts)
+  min_units_full <- max(min_abs, ceiling(min_frac * ncol(y0)))
+  rownames(counts)[rowSums(cpm(y0) >= cpm_cut) >= min_units_full]
+})
+if (!length(frozen_genes)) stop("No genes survive the frozen arm filter")
+
 placeholder_row <- function(subset, model, status, notes, n_units, n_donors, n_datasets, rdf = NA_integer_) {
   data.frame(
     subset = subset, model = model, gene = NA_character_,
@@ -155,10 +164,14 @@ placeholder_row <- function(subset, model, status, notes, n_units, n_donors, n_d
   )
 }
 
-filter_y <- function(mat) {
+filter_y <- function(mat, keep_genes = NULL) {
   y <- DGEList(counts = mat)
   min_units <- max(min_abs, ceiling(min_frac * ncol(y)))
-  keep <- rowSums(cpm(y) >= cpm_cut) >= min_units
+  keep <- if (is.null(keep_genes)) {
+    rowSums(cpm(y) >= cpm_cut) >= min_units
+  } else {
+    rownames(y) %in% keep_genes
+  }
   y <- y[keep, , keep.lib.sizes = FALSE]
   y <- calcNormFactors(y, method = "TMM")
   list(y = y, min_units = min_units)
@@ -273,7 +286,7 @@ run_limma <- function(meta_sub, counts_sub, exposure_name, subset, model, rdf_fl
     diagnostic$exposure_vif > (cfg$diagnostics$vif_review %||% 10) ||
     diagnostic$max_exposure_spearman > (cfg$diagnostics$rho_review %||% 0.9)
   if (isTRUE(review)) notes <- paste(notes, "COLLINEARITY_REVIEW_REQUIRED")
-  fy <- tryCatch(filter_y(counts_sub), error = function(e) e)
+  fy <- tryCatch(filter_y(counts_sub, frozen_genes), error = function(e) e)
   if (inherits(fy, "error") || nrow(fy$y) < 5L) {
     filter_note <- if (inherits(fy, "error")) note_from_error("gene filter failed:", fy) else "too few genes after filter"
     return(list(
@@ -291,6 +304,7 @@ run_limma <- function(meta_sub, counts_sub, exposure_name, subset, model, rdf_fl
       fit = NULL
     ))
   }
+  if (!isTRUE(fitted$blocked)) notes <- paste(notes, "NO_BLOCK_FALLBACK")
   tab <- extract_coef(fitted$fit, exposure_name, n_units, n_donors, n_datasets, rdf,
                       subset, model, exposure_name, notes)
   for (key in names(diagnostic)) tab[[key]] <- diagnostic[[key]]
@@ -318,7 +332,7 @@ run_edger <- function(meta_sub, counts_sub, exposure_name, subset) {
                            sprintf("rank %d residual df %d", rank, rdf),
                            n_units, n_donors, n_datasets, rdf))
   }
-  fy <- filter_y(counts_sub)
+  fy <- filter_y(counts_sub, frozen_genes)
   y <- estimateDisp(fy$y, design)
   fit <- glmQLFit(y, design, robust = TRUE)
   qlf <- glmQLFTest(fit, coef = exposure_name)
@@ -390,7 +404,8 @@ write.csv(do.call(rbind, loo_tabs), file.path(tables, "donor_loo.csv"), row.name
 for (ds in unique(as.character(meta[[dataset_key]]))) {
   keep <- as.character(meta[[dataset_key]]) == ds
   within <- run_limma(meta[keep, , drop = FALSE], counts[, keep, drop = FALSE],
-                      primary_exposure, paste0("WITHIN_", ds), "limma_primary")
+                      primary_exposure, paste0("WITHIN_", ds), "limma_primary",
+                      cfg$eligibility$min_rdf_holdout %||% min_rdf)
   all_tabs[[length(all_tabs) + 1L]] <- within$table
 }
 
@@ -420,7 +435,8 @@ audit$runtime <- list(
 )
 audit$blocking <- list(
   blocked = isTRUE(!is.null(full_fit) && !is.null(full_fit$fit) && full_fit$fit$blocked),
-  consensus = if (is.null(full_fit) || is.null(full_fit$fit)) NA_real_ else full_fit$fit$consensus
+  consensus = if (is.null(full_fit) || is.null(full_fit$fit)) NA_real_ else full_fit$fit$consensus,
+  fallback = isTRUE(!is.null(full_fit) && !is.null(full_fit$fit) && !full_fit$fit$blocked)
 )
 write(toJSON(audit, auto_unbox = TRUE, pretty = TRUE, null = "null", na = "null"), file.path(logs, "model_audit.json"))
 message("wrote gene_effects.csv and model_audit.json")

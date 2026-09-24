@@ -300,6 +300,10 @@ Rscript scripts/part5_run_models.R path/to/analysis_config.yaml
 - LOO, LODO, threshold, and alternative-exposure rows **do not** enter
   that family.
 
+`gene_effects.csv` still carries a `q_bh` value on sensitivity rows. That
+number is BH **within that subset only**. It is not the declared discovery
+family and must not be quoted, ranked against FULL, or used in a verdict.
+
 ### `robust_primary` gene
 
 All of:

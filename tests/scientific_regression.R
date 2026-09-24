@@ -73,7 +73,8 @@ stopifnot(audit$full_status == "SUCCESS", audit$n_donors == 24L,
  audit$source_evidence == "INTERNAL_SENSITIVITY_ONLY",
  all(c("LODO_1","LODO_2","LODO_3") %in% effects$subset),
  all(is.finite(effects$exposure_vif[effects$subset=="FULL" & effects$model=="limma_primary"])),
- !is.null(audit$runtime$R), !isTRUE(audit$blocking$blocked))
+ !is.null(audit$runtime$R), !isTRUE(audit$blocking$blocked),
+ isTRUE(audit$blocking$fallback), audit$lodo_gene_membership_gaps == 0)
 saved <- readRDS(file.path(root,"05_logs/primary_fit.rds"))
 stopifnot(isFALSE(saved$blocked), "consensus" %in% names(saved), "block" %in% names(saved))
 cat("SCIENTIFIC_REGRESSION_OK\nArtifacts:",root,"\n")
@@ -108,6 +109,7 @@ stopifnot(joint_audit$n_donors == n, joint_audit$n_units == 2*n,
           joint_audit$model_mode_status == "EXPLORATORY_ONLY_CALIBRATION_CONCERN",
           joint_audit$precision_status == "DESCRIPTIVE_CI_PRECISION_ONLY",
           isTRUE(joint_audit$blocking$blocked),
+          isFALSE(joint_audit$blocking$fallback),
           is.finite(joint_audit$blocking$consensus))
 joint_fit <- readRDS(file.path(joint,"05_logs/primary_fit.rds"))
 stopifnot(isTRUE(joint_fit$blocked), is.finite(joint_fit$consensus), length(joint_fit$block) == nrow(joint_meta))

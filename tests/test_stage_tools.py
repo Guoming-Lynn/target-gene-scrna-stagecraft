@@ -223,6 +223,25 @@ class StageReportTests(unittest.TestCase):
             self.assertIn("`Cross-dataset or cross-source consistency`", text)
             self.assertEqual(lint_text(text), [])
 
+    def _report_gene_order(self, robust_primary) -> str:
+        with tempfile.TemporaryDirectory() as tmp:
+            stage = self._part5(Path(tmp))
+            table = pd.read_csv(stage / "02_tables" / "gene_evidence.csv")
+            table["robust_primary"] = robust_primary
+            table.to_csv(stage / "02_tables" / "gene_evidence.csv", index=False)
+            self.assertEqual(stage_report.main([str(stage)]), 0)
+            text = (stage / "06_reports" / "PART5_REPORT.md").read_text(encoding="utf-8")
+            section = text.split("## 4. Primary numbers", 1)[1].split("## 5.", 1)[0]
+            return section
+
+    def test_robust_primary_accepts_one_and_zero(self):
+        section = self._report_gene_order(["0", "1"])
+        self.assertLess(section.index("GENE_B"), section.index("GENE_A"))
+
+    def test_robust_primary_accepts_native_booleans(self):
+        section = self._report_gene_order([False, True])
+        self.assertLess(section.index("GENE_B"), section.index("GENE_A"))
+
     def test_second_report_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             stage = self._part5(Path(tmp))

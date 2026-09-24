@@ -3,6 +3,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import anndata as ad
 import numpy as np
@@ -13,6 +14,7 @@ from scipy.io import mmread
 import part5_pseudobulk as pb
 import part5_source_blocks as sources
 import part6_axes as axes
+import part6_controls as controls
 import part6_endpoints as endpoints
 import part6_token_audit as tokens
 import part6_eligibility as eligibility
@@ -218,6 +220,66 @@ class DataConstruction(unittest.TestCase):
                 axes.main(argv)
             with self.assertRaises(SystemExit):
                 axes.main(["--cls", "x.npy", "--cells", "c.csv", "--scores", "s.csv", "--endpoint", "E", "--out", str(root / "axes")])
+
+    def test_axes_leaves_no_files_when_the_sidecar_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cells = pd.DataFrame({"cell_id": [f"c{i}" for i in range(110)],
+                                  "dataset_donor_id": np.repeat([f"d{i}" for i in range(11)], 10)})
+            cls = np.tile(np.array([[-1., 0.]]*5 + [[1., 0.]]*5), (11, 1))
+            scores = pd.DataFrame({"cell_id": cells.cell_id, "E": np.tile(np.arange(10), 11)})
+            np.save(root / "cls.npy", cls)
+            cells.to_csv(root / "cells.csv", index=False)
+            scores.to_csv(root / "scores.csv", index=False)
+            argv = ["--cls", str(root / "cls.npy"), "--cells", str(root / "cells.csv"),
+                    "--scores", str(root / "scores.csv"), "--endpoint", "E", "--out", str(root / "axes.npz")]
+            with patch.object(axes.json, "dumps", side_effect=RuntimeError("boom")):
+                with self.assertRaises(RuntimeError):
+                    axes.main(argv)
+            self.assertFalse((root / "axes.npz").exists())
+            self.assertFalse((root / "axes.skipped.json").exists())
+            self.assertEqual([path.name for path in root.iterdir() if "partial" in path.name], [])
+
+    def test_controls_leaves_no_files_when_the_sidecar_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            genes = pd.DataFrame({
+                "gene_symbol": ["TARGET_GENE"] + [f"FEATURE{i}" for i in range(20)],
+                "detection_fraction": [0.5] * 21,
+                "mean_raw_counts_per_cell": [10.0] + [9.0 + i * 0.1 for i in range(20)],
+                "in_model_vocabulary": ["true"] * 21,
+            })
+            genes.to_csv(root / "genes.csv", index=False)
+            (root / "union.txt").write_text("", encoding="utf-8")
+            out = root / "frozen_controls.csv"
+            calls = {"n": 0}
+            real = pd.DataFrame.to_csv
+
+            def fail_second(self, *args, **kwargs):
+                calls["n"] += 1
+                if calls["n"] > 1:
+                    raise RuntimeError("boom")
+                return real(self, *args, **kwargs)
+
+            with patch.object(pd.DataFrame, "to_csv", fail_second):
+                with self.assertRaises(RuntimeError):
+                    controls.main([str(root / "genes.csv"), "--target", "TARGET_GENE",
+                                   "--endpoint-union", str(root / "union.txt"), "--out", str(out)])
+            self.assertFalse(out.exists())
+            self.assertFalse((root / "control_candidates.csv").exists())
+            self.assertEqual([path.name for path in root.iterdir() if "partial" in path.name], [])
+
+    def test_run_status_is_case_insensitive(self):
+        rows = [dict(cell_id=f"A{i}", dataset_donor_id="A", target_symbol="TARGET_FEATURE",
+                     perturbation="KO", analysis_population="PRIMARY", endpoint="E",
+                     delta_axis=i, run_status="run") for i in range(5)]
+        cells = pd.DataFrame(rows)
+        ledger, _valid = eligibility.donor_eligibility(cells)
+        upper = cells.copy()
+        upper["run_status"] = "RUN"
+        ledger_upper, _valid_upper = eligibility.donor_eligibility(upper)
+        self.assertEqual(ledger.n_success.tolist(), [5])
+        self.assertEqual(ledger.n_success.tolist(), ledger_upper.n_success.tolist())
 
     def test_token_classes_and_cap_boundary_with_string_booleans(self):
         frame = pd.DataFrame({"cell_id": list("abcdef"), "raw_count": [1, 0, 1, 1, 0, 1],
