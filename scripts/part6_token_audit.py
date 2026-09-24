@@ -27,7 +27,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 _ensure_repo_on_path(__file__)
 
 from stagecraft import EXIT_GATE, EXIT_NOT_ESTIMABLE, EXIT_OK  # noqa: E402
-from stagecraft.io import read_identity_csv  # noqa: E402
+from stagecraft.io import parse_bool_column, read_identity_csv  # noqa: E402
 
 ILLEGAL = "ILLEGAL_MISMATCH"
 TRUNCATION = "CAP_TRUNCATION"
@@ -72,9 +72,7 @@ def audit_ledger(
     out = frame.copy()
     if out["cell_id"].isna().any() or out["cell_id"].duplicated().any():
         raise SystemExit("Token ledger needs unique nonmissing cell_id.")
-    present = out["final_token_present"].astype(str).str.lower().map({"true": True, "false": False, "1": True, "0": False})
-    if present.isna().any():
-        raise SystemExit("final_token_present must be true/false or 1/0.")
+    present = parse_bool_column(out["final_token_present"], "final_token_present")
     for col in ("raw_count", "sequence_length"):
         values = pd.to_numeric(out[col], errors="coerce").to_numpy(float)
         if not np.isfinite(values).all() or (values < 0).any() or (values != np.floor(values)).any():

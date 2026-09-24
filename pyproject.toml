@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "target-gene-scrna-stagecraft"
-version = "2.3.2"
+version = "2.4.0"
 description = "Protocol-driven multi-study scRNA-seq workflow for one pre-specified gene."
 readme = "README.md"
 license = { file = "LICENSE" }

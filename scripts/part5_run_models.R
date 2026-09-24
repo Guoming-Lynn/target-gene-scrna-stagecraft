@@ -38,6 +38,7 @@ args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1L) stop("usage: Rscript part5_run_models.R analysis_config.yaml")
 cfg_path <- normalizePath(args[[1]], winslash = "/", mustWork = TRUE)
 cfg <- yaml.load_file(cfg_path)
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
 set.seed(cfg$random_seed %||% 42L)
 if (is.null(cfg$eligibility)) stop("Freeze eligibility: n_formal, min_datasets_formal, min_rdf_formal")
 missing_eligibility <- setdiff(

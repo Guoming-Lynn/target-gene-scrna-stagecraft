@@ -34,7 +34,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 _ensure_repo_on_path(__file__)
 
 from stagecraft.hashing import sha256_file
-from stagecraft.io import CSV_EXCEL, require_new
+from stagecraft.io import CSV_EXCEL, publish_new_files
 
 try:
     import anndata as ad
@@ -219,17 +219,46 @@ def main(argv: list[str] | None = None) -> int:
 
     clean_analysis_state(retained)
 
-    removed_path = require_new(args.removed_out)
-    child_path = require_new(args.child_raw)
     tables = args.tables_out
-    tables.mkdir(parents=True, exist_ok=True)
-
-    removed.write_h5ad(removed_path, compression="gzip")
-    retained.write_h5ad(child_path, compression="gzip")
-
     audit = removed.obs.loc[:, _audit_columns(removed.obs)].copy()
     audit.insert(0, "cell_id", removed.obs_names.astype(str))
-    _write_new(audit, tables / "removed_clusters_audit.csv")
+    manifest = pd.DataFrame(
+        {
+            "parent_cell_id": raw.obs_names.astype(str),
+            "status": np.where(mask, "removed", "retained"),
+            "parent_cluster": labels.to_numpy(),
+        }
+    )
+    payload = {
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "parent_raw": str(args.parent_raw.resolve()),
+        "parent_clustered": str(args.parent_clustered.resolve()),
+        "leiden_key": args.leiden_key,
+        "decision_file": str(args.decision.resolve()),
+        "decision_file_sha256": sha256_file(args.decision),
+        "removed_h5ad": str(args.removed_out.resolve()),
+        "child_raw": str(args.child_raw.resolve()),
+        "n_parent": int(raw.n_obs),
+        "n_removed": int(removed.n_obs),
+        "n_retained": int(retained.n_obs),
+        "removed_clusters": decisions.loc[decisions["decision"].eq("DELETE")].to_dict(
+            orient="records"
+        ),
+        "kept_clusters": decisions.loc[decisions["decision"].eq("KEEP"), "cluster_id"].tolist(),
+    }
+
+    def _csv(frame: pd.DataFrame):
+        def write_csv(path: Path, frame: pd.DataFrame = frame) -> None:
+            frame.to_csv(path, index=False, encoding=CSV_EXCEL)
+        return write_csv
+
+    items: list[tuple[Path, object]] = [
+        (args.removed_out, lambda path: removed.write_h5ad(path, compression="gzip")),
+        (args.child_raw, lambda path: retained.write_h5ad(path, compression="gzip")),
+        (tables / "removed_clusters_audit.csv", _csv(audit)),
+        (tables / "parent_round_partition_manifest.csv", _csv(manifest)),
+        (tables / "parent_removal_decision.json", lambda path: path.write_text(json.dumps(payload, indent=2), encoding="utf-8")),
+    ]
     for field, name in (
         ("dataset", "removed_clusters_by_dataset.csv"),
         ("donor_id", "removed_clusters_by_donor.csv"),
@@ -240,41 +269,15 @@ def main(argv: list[str] | None = None) -> int:
             summary = (
                 removed.obs.groupby(field, observed=True).size().rename("n_cells").reset_index()
             )
-            _write_new(summary, tables / name)
-
-    manifest = pd.DataFrame(
-        {
-            "parent_cell_id": raw.obs_names.astype(str),
-            "status": np.where(mask, "removed", "retained"),
-            "parent_cluster": labels.to_numpy(),
-        }
-    )
-    _write_new(manifest, tables / "parent_round_partition_manifest.csv")
+            items.append((tables / name, _csv(summary)))
     if args.child_tables is not None and args.child_tables.resolve() != tables.resolve():
-        args.child_tables.mkdir(parents=True, exist_ok=True)
-        _write_new(manifest, args.child_tables / "parent_round_partition_manifest.csv")
+        items.append((args.child_tables / "parent_round_partition_manifest.csv", _csv(manifest)))
 
-    payload = {
-        "created_utc": datetime.now(timezone.utc).isoformat(),
-        "parent_raw": str(args.parent_raw.resolve()),
-        "parent_clustered": str(args.parent_clustered.resolve()),
-        "leiden_key": args.leiden_key,
-        "decision_file": str(args.decision.resolve()),
-        "decision_file_sha256": sha256_file(args.decision),
-        "removed_h5ad": str(removed_path.resolve()),
-        "child_raw": str(child_path.resolve()),
-        "n_parent": int(raw.n_obs),
-        "n_removed": int(removed.n_obs),
-        "n_retained": int(retained.n_obs),
-        "removed_clusters": decisions.loc[decisions["decision"].eq("DELETE")].to_dict(
-            orient="records"
-        ),
-        "kept_clusters": decisions.loc[decisions["decision"].eq("KEEP"), "cluster_id"].tolist(),
-    }
-    decision_json = tables / "parent_removal_decision.json"
-    if decision_json.exists():
-        raise SystemExit(f"Refusing to overwrite: {decision_json}")
-    decision_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    def write(paths: list[Path]) -> None:
+        for path, writer in zip(paths, [item[1] for item in items]):
+            writer(path)
+
+    publish_new_files([item[0] for item in items], write)
 
     ids = "_".join(sorted(delete_ids, key=lambda x: int(x) if x.isdigit() else x))
     print(
@@ -283,11 +286,6 @@ def main(argv: list[str] | None = None) -> int:
         "no old embedding is reused."
     )
     return 0
-
-
-def _write_new(frame: pd.DataFrame, path: Path) -> None:
-    require_new(path)
-    frame.to_csv(path, index=False, encoding=CSV_EXCEL)
 
 
 def _infer_child_name(child_raw: Path) -> str:

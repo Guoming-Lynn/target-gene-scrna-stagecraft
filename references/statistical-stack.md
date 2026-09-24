@@ -54,7 +54,7 @@ Drop `dataset` from the formula when only one dataset level remains. Record the 
 ## Pathways
 
 - Primary: CAMERA on the voom design (competitive).
-- Secondary: fgsea multilevel on the primary moderated-t ranking (`minSize=10`, `maxSize=500`).
+- Secondary: fgsea multilevel on the primary moderated-t ranking (`minSize=10`, `maxSize=500`, `eps=1e-50`, `nPermSimple=1000` unless `pathways` overrides them).
 - Libraries: frozen local JSON, SHA-256 checked (Hallmark / KEGG / GO BP or the protocol's list).
 - ORA: only for a pre-specified strict non-technical DEG query of 10–500 genes and ≤20% of the tested universe.
 

@@ -37,7 +37,7 @@ def release_files(root, manifest="release-files.txt"):
     return files
 
 
-def package(root, output_dir=None, manifest="release-files.txt"):
+def package(root, output_dir=None, manifest="skill-files.txt"):
     root = Path(root).resolve()
     files = release_files(root, manifest)
     metadata = yaml.safe_load((root / "SKILL.md").read_text(encoding="utf-8").split("---", 2)[1])

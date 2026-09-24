@@ -475,5 +475,29 @@ class StageStatusTests(unittest.TestCase):
             self.assertTrue({"steps", "next", "warnings"} <= set(payload))
 
 
+class PathwayFigureTests(unittest.TestCase):
+    def test_pathway_plot_reads_q_columns_and_refuses_names(self):
+        import matplotlib
+        matplotlib.use("Agg")
+        from part5_figures import plot_pathways
+        from plotting_style import load_plotting_config
+
+        config = load_plotting_config()
+        frame = pd.DataFrame({
+            "library": ["L", "L", "L"],
+            "pathway": ["A", "B", "C"],
+            "Direction": ["Up", "Down", "Up"],
+            "q_bh_camera": [0.01, 0.2, 0.04],
+            "NES": [1.2, -0.4, 0.8],
+            "q_bh_fgsea": [0.02, 0.3, 0.01],
+            "same_direction": [True, True, True],
+        })
+        with tempfile.TemporaryDirectory() as tmp:
+            plot_pathways(frame, config, Path(tmp) / "pathways", [])
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(SystemExit):
+                plot_pathways(frame[["library", "pathway", "Direction"]], config, Path(tmp) / "pathways", [])
+
+
 if __name__ == "__main__":
     unittest.main()

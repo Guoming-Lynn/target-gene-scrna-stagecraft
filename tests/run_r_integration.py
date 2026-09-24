@@ -1,4 +1,4 @@
-"""Execute the Part 5 audit boundaries and real-model integration tests."""
+"""Execute the Part 5 R contract and integration tests."""
 from __future__ import annotations
 
 import argparse
@@ -15,7 +15,7 @@ def main() -> int:
     root = pathlib.Path(__file__).parents[1]
     if not args.rscript:
         parser.error("Set STAGECRAFT_RSCRIPT, pass --rscript, or add Rscript to PATH")
-    for test in ("audit_boundaries.R", "scientific_regression.R"):
+    for test in ("audit_boundaries.R", "scientific_regression.R", "pathway_contract.R"):
         completed = subprocess.run([args.rscript, "--vanilla", str(root / "tests" / test)],
                                    cwd=root, check=False, timeout=600)
         if completed.returncode:

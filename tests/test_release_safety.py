@@ -87,13 +87,13 @@ class ReleaseSafety(unittest.TestCase):
             (root / 'release-files.txt').write_text('SKILL.md\nrelease-files.txt\n')
             for name in ('.env', 'patients.csv', 'atlas.h5ad', 'weights.safetensors', 'unreviewed.py'):
                 (root / name).write_bytes(b'private')
-            out = package_skill.package(root)
+            out = package_skill.package(root, manifest="release-files.txt")
             with zipfile.ZipFile(out) as archive:
                 self.assertEqual(set(archive.namelist()), {'skill/SKILL.md', 'skill/release-files.txt'})
                 self.assertIsNone(archive.testzip())
             self.assertIn(hashlib.sha256(out.read_bytes()).hexdigest(), out.with_suffix('.sha256.txt').read_text())
             with self.assertRaises(SystemExit):
-                package_skill.package(root)
+                package_skill.package(root, manifest="release-files.txt")
             for text in ('../outside.txt\n', 'missing.py\n', 'SKILL.md\nSKILL.md\n', ''):
                 (root / 'release-files.txt').write_text(text)
                 with self.assertRaises(SystemExit):
@@ -127,5 +127,5 @@ class ReleaseSafety(unittest.TestCase):
             with patch.object(package_skill, '__file__', str(root / 'scripts' / 'package_skill.py')):
                 # The library entry point keeps repository selection explicit;
                 # this verifies callers can choose a writable destination.
-                archive = package_skill.package(root, output)
+                archive = package_skill.package(root, output, manifest="release-files.txt")
             self.assertEqual(archive.parent, output)

@@ -41,13 +41,27 @@ rscript <- file.path(R.home("bin"), "Rscript.exe")
 if (!file.exists(rscript)) rscript <- file.path(R.home("bin"), "Rscript")
 output <- system2(rscript, c("--vanilla", shQuote(runner), shQuote(cfg_path)), stdout = TRUE, stderr = TRUE)
 if (!is.null(attr(output, "status"))) stop(paste(output, collapse = "\n"))
-evidence <- read.csv(file.path(root, "02_tables/pathway_evidence.csv"))
-audit <- fromJSON(file.path(root, "02_tables/pathway_audit.json"))
+tables <- file.path(root, "02_tables")
+evidence <- read.csv(file.path(tables, "pathway_evidence.csv"))
+fgsea_tab <- read.csv(file.path(tables, "fgsea_pathways.csv"))
+audit <- fromJSON(file.path(tables, "pathway_audit.json"))
+digests <- setNames(lapply(list.files(tables, full.names = TRUE), function(p) digest(file = p, algo = "sha256")), list.files(tables))
 stopifnot(
-  all(c("q_bh_camera", "q_bh_fgsea", "dual_method_candidate") %in% names(evidence)),
+  all(c("q_bh_camera", "q_bh_fgsea", "dual_method_candidate", "technical_leading_edge_fraction", "technical_leading_edge_pass") %in% names(evidence)),
+  all(c("leading_edge", "leading_edge_size", "technical_leading_edge_fraction") %in% names(fgsea_tab)),
   nrow(evidence) >= 1L,
+  all(is.na(evidence$robust_primary)),
+  all(evidence$robustness_status == "PENDING_PATHWAY_LODO"),
   isTRUE(all.equal(audit$inter_gene_cor, 0.01)),
   isFALSE(audit$blocked),
-  !is.null(audit$packages$fgsea)
+  !is.null(audit$packages$fgsea),
+  audit$random_seed == 3L,
+  identical(audit$rng_kind[[1]], "Mersenne-Twister"),
+  is.numeric(audit$n_tied_nonzero_stats),
+  !any(grepl("\\.partial\\.", list.files(tables)))
 )
+retry <- system2(rscript, c("--vanilla", shQuote(runner), shQuote(cfg_path)), stdout = TRUE, stderr = TRUE)
+if (is.null(attr(retry, "status"))) stop("second pathway run should refuse to overwrite")
+after <- setNames(lapply(list.files(tables, full.names = TRUE), function(p) digest(file = p, algo = "sha256")), list.files(tables))
+stopifnot(identical(digests, after))
 cat("PATHWAY_CONTRACT_OK\n")

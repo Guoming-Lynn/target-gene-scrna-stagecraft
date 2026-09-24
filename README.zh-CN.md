@@ -1,8 +1,10 @@
 # target-gene-scrna-stagecraft
 
-[English README](README.md) · 中文说明 · v2.3.2
+[English README](README.md) · 中文说明 · v2.4.0
 
 [![CI](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10 | 3.11](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue.svg)](INSTALL.md)
 
 ## 这是什么
 
@@ -52,13 +54,19 @@ python -m pip install -e .
 
 `pip install -e .` 只安装共享包 `stagecraft`。命令仍用 `python scripts/...`，不会进入 PATH。Python 停在 3.10 或 3.11，与已验证的 Scanpy / AnnData 范围一致。
 
-正式运行前把 `environment.example.yaml` 抄进阶段目录并替换占位符。科学有效性、图契约和细胞级探索的边界见英文 README 的 Validation 一节：细胞级结果不能进入正式 verdict，`simulation_contract.py` 只写 manifest。
+正式运行前把 `environment.example.yaml` 抄进阶段目录并替换占位符。科学有效性以 [research-validity.md](references/research-validity.md) 为准。图契约见 [figure-contract.md](references/figure-contract.md)、[figure-statistics-contract.md](references/figure-statistics-contract.md) 和 [visual-qa-contract.md](references/visual-qa-contract.md)。细胞级结果不能进入正式 verdict，`simulation_contract.py` 只写 manifest。
+
+本地检查与 CI 的 helper 作业一致，但 CI 还会跑零假设校准冒烟和 wheel 构建：
+
+```bash
+Rscript --vanilla scripts/calibrate_part5_null.R "$RUNNER_TEMP/part5_null_smoke" 1 7 subtype_specific 8 2 100
+```
 
 | Agent | 路径 |
 |---|---|
-| Codex | `~/.agents/skills/target-gene-scrna-stagecraft/` |
-| Cursor | `~/.cursor/skills/target-gene-scrna-stagecraft/` |
-| Claude Code | `~/.claude/skills/target-gene-scrna-stagecraft/` |
+| Codex | `~/.agents/skills/target-gene-scrna-stagecraft/` 或 `<repo>/.agents/skills/target-gene-scrna-stagecraft/` |
+| Cursor | `~/.cursor/skills/target-gene-scrna-stagecraft/` 或 `<repo>/.cursor/skills/` |
+| Claude Code | `~/.claude/skills/target-gene-scrna-stagecraft/` 或 `<repo>/.claude/skills/` |
 
 测试与 lint 另装 `requirements-dev.txt`。Part 5 还需要 R，以及 `Matrix`、`limma`、`edgeR`、`fgsea`、`statmod`、`jsonlite`、`yaml` 和 `digest`。Part 6 需要另建 Geneformer 环境。详细说明见 [INSTALL.md](INSTALL.md) 和 [R 依赖](references/r-requirements.md)。
 

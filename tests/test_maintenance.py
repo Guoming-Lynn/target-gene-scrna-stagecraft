@@ -211,5 +211,34 @@ class Maintenance(unittest.TestCase):
             self.assertEqual(list(Path(tmp).iterdir()), [])
 
 
+    def test_cli_catalog_lists_every_cli(self):
+        root = Path(__file__).resolve().parents[1]
+        catalog = (root / "references/cli-catalog.md").read_text(encoding="utf-8")
+        scripts = root / "scripts"
+        for path in sorted(scripts.glob("*.py")):
+            text = path.read_text(encoding="utf-8")
+            if "ArgumentParser(" not in text and path.name not in {"_part5_smoke.py", "_part6_smoke.py"}:
+                continue
+            self.assertIn(f"scripts/{path.name}", catalog, path.name)
+        for path in sorted(scripts.glob("*.R")):
+            if "commandArgs(" in path.read_text(encoding="utf-8"):
+                self.assertIn(f"scripts/{path.name}", catalog, path.name)
+        for name, commands in {
+            "part3_figures.py": ["stop1", "stop2", "exclusion", "membership", "lock"],
+            "part5_figures.py": ["coverage", "exposure", "collinear", "volcano", "forest", "holdout", "loo", "pathways", "within"],
+            "part6_figures.py": ["observability", "eligibility", "donors", "forest", "ranks", "support", "symmetry", "sham"],
+        }.items():
+            for command in commands:
+                self.assertIn(command, catalog, f"{name} {command}")
+
+    def test_pathway_technical_regex_matches_the_gene_audit(self):
+        root = Path(__file__).resolve().parents[1]
+        audit = (root / "scripts/part5_model_audit.R").read_text(encoding="utf-8")
+        pathways = (root / "scripts/part5_run_pathways.R").read_text(encoding="utf-8")
+        pattern = '^(MT-|RPS|RPL|HBA[12]$|HBB$|HBD$|HBE1$|HBG[12]$|HBM$|HBQ1$|HBZ$)|^(MALAT1|XIST)$'
+        self.assertIn(pattern, audit)
+        self.assertIn(pattern, pathways)
+
+
 if __name__ == "__main__":
     unittest.main()

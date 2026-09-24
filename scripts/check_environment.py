@@ -16,7 +16,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 
 _ensure_repo_on_path(__file__)
 
-from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
+from stagecraft import EXIT_GATE, EXIT_OK, __version__  # noqa: E402
 
 # part1/part3 clustering extras are in requirements-part1.txt, not the base install.
 PROFILES = {
@@ -61,7 +61,7 @@ def main(argv=None):
         valid = model.is_dir() and (model / 'config.json').is_file() and any((model / x).is_file() for x in ['model.safetensors', 'pytorch_model.bin', 'model.safetensors.index.json', 'pytorch_model.bin.index.json'])
         results['model_files'] = dict(status='PASS' if valid else 'FAILED', detail='Model load, revision/hash and official parity gates remain required before inference')
     passed = all(row['status'] == 'PASS' for row in results.values())
-    print(json.dumps(dict(stage=args.stage, status='PASS' if passed else 'FAILED', results=results), indent=2), flush=True)
+    print(json.dumps(dict(stage=args.stage, stagecraft_version=__version__, status='PASS' if passed else 'FAILED', results=results), indent=2), flush=True)
     return EXIT_OK if passed else EXIT_GATE
 
 if __name__ == '__main__':

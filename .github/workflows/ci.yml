@@ -16,8 +16,8 @@ jobs:
         python-version: ['3.10', '3.11']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -32,14 +32,16 @@ jobs:
         if: runner.os == 'Linux' && matrix.python-version == '3.11'
         run: |
           python -m pip install pytest-cov build
-          python -m pytest -q tests --cov=stagecraft --cov-report=term-missing
+          python -m pytest -q tests --cov=stagecraft --cov-report=term-missing --cov-fail-under=90
           python -m build --outdir "$RUNNER_TEMP/dist"
           python -m venv "$RUNNER_TEMP/wheel-venv"
           "$RUNNER_TEMP/wheel-venv/bin/python" -m pip install --upgrade pip
           "$RUNNER_TEMP/wheel-venv/bin/python" -m pip install "$RUNNER_TEMP/dist"/*.whl
           "$RUNNER_TEMP/wheel-venv/bin/python" -c "import stagecraft; print(stagecraft.__version__)"
+          python scripts/package_skill.py --out-dir "$RUNNER_TEMP/skill"
+          python -c "import pathlib, zipfile, sys; z = next(pathlib.Path(sys.argv[1]).glob('*.zip')); zf = zipfile.ZipFile(z); assert zf.testzip() is None; names = zf.namelist(); assert any(n.endswith('/SKILL.md') for n in names); assert not any('__pycache__' in n for n in names); print(z.name, len(names))" "$RUNNER_TEMP/skill"
       - run: python quickstart.py --out quickstart_output
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: runner.os == 'Linux' && matrix.python-version == '3.11'
         with:
           name: quickstart-output
@@ -51,12 +53,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: r-lib/actions/setup-r@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           r-version: '4.5.2'
           use-public-rspm: true
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           packages: |
             any::Matrix
@@ -77,3 +79,17 @@ jobs:
       - name: Part 5 null calibration smoke
         run: Rscript --vanilla scripts/calibrate_part5_null.R "$env:RUNNER_TEMP\part5_null_smoke" 1 7 subtype_specific 8 2 100
         if: runner.os == 'Windows'
+  part1-extras:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-part1.txt
+            pyproject.toml
+      - run: python -m pip install -e . -r requirements.txt -r requirements-part1.txt
+      - run: python scripts/check_environment.py --stage part1

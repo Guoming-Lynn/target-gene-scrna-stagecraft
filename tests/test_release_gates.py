@@ -1,14 +1,26 @@
+import contextlib
+import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import stagecraft
+
 from check_environment import main as environment_main
 from part5_verdict import guarded_verdict
 from part6_verdict import main as verdict_main
 
 class ReleaseGates(unittest.TestCase):
+    def test_environment_report_names_the_skill_version(self):
+        with patch("check_environment.check", return_value={"status": "PASS"}):
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(environment_main(["--stage", "smoke"]), 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["stagecraft_version"], stagecraft.__version__)
+
     def test_missing_r_is_fatal_for_part5(self):
         with patch('check_environment.check', return_value={'status': 'PASS'}), patch('check_environment.shutil.which', return_value=None):
             self.assertEqual(environment_main(['--stage', 'part5', '--rscript', '']), 2)

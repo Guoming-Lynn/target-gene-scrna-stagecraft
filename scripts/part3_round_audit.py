@@ -36,12 +36,20 @@ except ImportError:  # pragma: no cover
 def membership_counts(
     parent_labels: pd.Series,
     child_labels: pd.Series,
+    *,
+    min_shared_fraction: float = 0.5,
 ) -> tuple[pd.DataFrame, list[str], list[str]]:
     parent_labels = parent_labels.astype(str)
     child_labels = child_labels.astype(str)
     shared = parent_labels.index.intersection(child_labels.index)
     if len(shared) == 0:
         raise SystemExit("No shared barcodes between parent and child objects.")
+    fraction = len(shared) / len(child_labels)
+    if fraction < min_shared_fraction:
+        raise SystemExit(
+            f"Shared barcodes {len(shared)} / {len(child_labels)} child barcodes "
+            f"is below {min_shared_fraction}"
+        )
     frame = pd.DataFrame(
         {
             "parent_cluster": parent_labels.loc[shared].to_numpy(),
@@ -76,6 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--child", type=Path, required=True)
     parser.add_argument("--child-key", required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--min-shared-fraction", type=float, default=0.5)
     args = parser.parse_args(argv)
     if sc is None:
         raise SystemExit("scanpy required")
@@ -90,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     counts, only_parent, only_child = membership_counts(
         parent.obs[args.parent_key],
         child.obs[args.child_key],
+        min_shared_fraction=args.min_shared_fraction,
     )
     counts = counts.sort_values(["parent_cluster", "child_cluster"], key=_sort_id)
     orphan = args.out.with_name(args.out.stem + "_barcode_orphans.csv")

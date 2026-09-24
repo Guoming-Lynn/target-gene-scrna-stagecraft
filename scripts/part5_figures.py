@@ -294,8 +294,10 @@ def plot_pathways(
     input_files: list[Path],
 ) -> None:
     frame = table.copy()
-    xcol = "camera_q" if "camera_q" in frame.columns else frame.columns[1]
-    ycol = "fgsea_q" if "fgsea_q" in frame.columns else frame.columns[2]
+    xcol = next((c for c in ("q_bh_camera", "camera_q") if c in frame.columns), None)
+    ycol = next((c for c in ("q_bh_fgsea", "fgsea_q") if c in frame.columns), None)
+    if xcol is None or ycol is None:
+        raise SystemExit("pathway table needs q_bh_camera and q_bh_fgsea (pathway_evidence.csv)")
     fig, ax = plt.subplots(figsize=figure_size(config, "single_panel"), layout="constrained")
     ax.scatter(
         -np.log10(np.clip(frame[xcol].to_numpy(float), 1e-300, 1)),

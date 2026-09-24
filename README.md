@@ -1,6 +1,6 @@
 # target-gene-scrna-stagecraft
 
-[中文说明](README.zh-CN.md) · English · v2.3.2
+[中文说明](README.zh-CN.md) · English · v2.4.0
 
 [![CI](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml/badge.svg)](https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -134,8 +134,14 @@ Rscript --vanilla tests/audit_boundaries.R
 Rscript --vanilla tests/scientific_regression.R
 ```
 
-Those commands match CI. `tests/run_r_integration.py` is a wrapper that runs
-the two R regression files; it is not a syntax linter.
+Those commands match the helper CI job except two extra CI steps: the
+null-calibration smoke and the wheel build.
+`tests/run_r_integration.py` also runs `tests/pathway_contract.R`.
+The null-calibration smoke is:
+
+```bash
+Rscript --vanilla scripts/calibrate_part5_null.R "$RUNNER_TEMP/part5_null_smoke" 1 7 subtype_specific 8 2 100
+```
 
 Figure contracts: [figure-contract.md](references/figure-contract.md),
 [figure-statistics-contract.md](references/figure-statistics-contract.md),

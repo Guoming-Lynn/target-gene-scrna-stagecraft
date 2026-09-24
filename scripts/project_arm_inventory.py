@@ -21,6 +21,7 @@ _ensure_repo_on_path(__file__)
 
 from stagecraft import EXIT_GATE, EXIT_OK  # noqa: E402
 from stagecraft.hashing import sha256_bytes, sha256_file  # noqa: E402
+from stagecraft.io import require_new  # noqa: E402
 
 
 def inventory(manifest_path):
@@ -67,9 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     report = inventory(args.manifest)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("x", encoding="utf-8") as stream:
-        json.dump(report, stream, indent=2)
+    require_new(args.out)
+    args.out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(report["status"])
     return EXIT_OK if report["status"] == "COMPLETE_DECLARED_INVENTORY" else EXIT_GATE
 

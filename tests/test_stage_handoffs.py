@@ -2,14 +2,16 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import anndata as ad
 import numpy as np
 import pandas as pd
 
 from part3_prepare_removal import clean_analysis_state, load_decisions, partition, main as removal_main
+from part3_round_audit import membership_counts
 from part4_identifiability import identifiability_table
-from project_arm_inventory import inventory
+from project_arm_inventory import inventory, main as inventory_main
 
 
 class StageHandoffs(unittest.TestCase):
@@ -49,6 +51,11 @@ class StageHandoffs(unittest.TestCase):
         pooled = identifiability_table(units, "subtype", source_key="source_block")
         row = pooled.loc[pooled.source.eq("ALL")].iloc[0]
         self.assertEqual((row.flag,row.n_units_eligible), ("WITHIN_SOURCE_RANGE",12))
+
+    def test_missing_eligible_column_is_refused(self):
+        units = self.units().drop(columns=["eligible"])
+        with self.assertRaises(SystemExit):
+            identifiability_table(units, "subtype")
 
     def test_partition_aligns_barcodes_and_clears_old_analysis(self):
         raw = ad.AnnData(np.arange(12).reshape(4,3).astype(float))
@@ -109,6 +116,45 @@ class StageHandoffs(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 removal_main(args)
 
+    def test_removal_leaves_no_files_when_the_decision_json_fails(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            raw = ad.AnnData(np.arange(12).reshape(4, 3).astype(float))
+            raw.obs_names = ["a", "b", "c", "d"]
+            raw.layers["counts"] = raw.X.copy()
+            raw.write_h5ad(root / "raw.h5ad")
+            clustered = raw[[3, 1, 0, 2]].copy()
+            clustered.obs["leiden"] = ["1", "0", "0", "1"]
+            clustered.write_h5ad(root / "clustered.h5ad")
+            pd.DataFrame({
+                "selected_leiden_column": ["leiden"] * 2, "cluster_id": ["0", "1"],
+                "decision": ["KEEP", "DELETE"], "reason": ["retained", "contamination"],
+                "reviewer": ["reviewer"] * 2, "review_date": ["2026-01-01"] * 2,
+            }).to_csv(root / "decision.csv", index=False)
+            removed = root / "removed.h5ad"
+            child = root / "child.h5ad"
+            tables = root / "tables"
+            args = ["--parent-raw", str(root / "raw.h5ad"), "--parent-clustered", str(root / "clustered.h5ad"),
+                    "--leiden-key", "leiden", "--decision", str(root / "decision.csv"),
+                    "--removed-out", str(removed), "--child-raw", str(child),
+                    "--tables-out", str(tables)]
+            with patch("part3_prepare_removal.json.dumps", side_effect=RuntimeError("boom")):
+                with self.assertRaises(RuntimeError):
+                    removal_main(args)
+            self.assertFalse(removed.exists())
+            self.assertFalse(child.exists())
+            self.assertFalse(tables.exists() and any(tables.iterdir()))
+            self.assertEqual(removal_main(args), 0)
+
+    def test_membership_requires_shared_fraction(self):
+        parent = pd.Series(["0"] * 10, index=[f"p{i}" for i in range(8)] + ["c0", "c1"])
+        child_low = pd.Series(["1"] * 10, index=[f"c{i}" for i in range(10)])
+        with self.assertRaises(SystemExit):
+            membership_counts(parent, child_low)
+        child_ok = pd.Series(["1"] * 10, index=["c0", "c1"] + [f"p{i}" for i in range(8)])
+        counts, _, _ = membership_counts(parent, child_ok)
+        self.assertEqual(int(counts["n_cells"].sum()), 10)
+
     def test_inventory_exposes_missing_and_failed_arms(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -123,6 +169,17 @@ class StageHandoffs(unittest.TestCase):
             manifest.write_text('arms:\n- {id: A, verdict: pass.json}\n- {id: B, verdict: pass.json}\n')
             with self.assertRaises(ValueError):
                 inventory(manifest)
+
+    def test_inventory_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "pass.json").write_text(json.dumps({"status": "SUCCESS", "verdict": "FROZEN_PASS"}))
+            manifest = root / "arms.yaml"
+            manifest.write_text("arms:\n- {id: A, verdict: pass.json}\n")
+            out = root / "inventory.json"
+            self.assertEqual(inventory_main([str(manifest), "--out", str(out)]), 0)
+            with self.assertRaises(SystemExit):
+                inventory_main([str(manifest), "--out", str(out)])
 
 
 if __name__ == "__main__":

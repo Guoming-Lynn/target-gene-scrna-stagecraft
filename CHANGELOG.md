@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here.
 
+## [2.4.0] - 2026-09-24
+
+### Added
+- Pathway results keep the fgsea leading edge, `technical_leading_edge_fraction`, and `technical_leading_edge_pass`. `robust_primary` stays unset until pathway-level LODO exists.
+- `check_environment.py` reports `stagecraft_version`.
+- The CLI catalog lists the Part 6 helper chain, figure subcommands, and the other public commands. A test fails if a new CLI is left out.
+- CI pins Actions to commit SHAs, fails below 90% `stagecraft` coverage, smoke-tests the skill zip, and checks the Part 1 extra dependencies.
+
+### Fixed
+- The Part 5 pathway figure reads `q_bh_camera` and `q_bh_fgsea`. A table without those columns is refused.
+- `part5_eligibility.py` and `part4_identifiability.py` refuse a table with no `eligible` column. `part5_eligibility.py` also refuses a missing source column instead of silently counting datasets as source blocks. Pass `--source-key dataset` to declare that choice; the audit records `source_key`.
+- Eligibility `n_units` counts `unit_id` rows. The formal gate still counts distinct donors, matching the R engine.
+- Pathway rows are ordered by byte order. The RNG kind is fixed and the seed, RNG kind, and tied-statistic count are written to `pathway_audit.json`.
+- Pathway outputs, Part 5 eligibility, and Part 3 removal publish as one set. `publish_new_files` deletes a final it already renamed if a later rename fails.
+- Identity CSV reads keep `sample_id`, `library_id`, and `source_block` as strings. Part 3 membership refuses a child object that shares fewer than half its barcodes with the parent.
+- No threshold changed. FULL-arm estimates and pathway p/q values are unchanged.
+
 ## [2.3.2] - 2026-09-24
 
 ### Fixed

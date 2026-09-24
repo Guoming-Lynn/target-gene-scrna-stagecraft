@@ -2,6 +2,7 @@ import ast
 import json
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,8 @@ class OpenSourceContract(unittest.TestCase):
         self.assertIn(f"version: {stagecraft.__version__}", citation)
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn(f"v{stagecraft.__version__}", readme)
+        readme_cn = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
+        self.assertIn(f"v{stagecraft.__version__}", readme_cn)
 
     def test_dev_pins_match_and_geneformer_manifest_is_not_updated(self):
         dev = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
@@ -92,6 +95,8 @@ class OpenSourceContract(unittest.TestCase):
             pd.DataFrame({"donor_id": ["001", "002"], "eligible": ["true", "false"]}).to_csv(path, index=False)
             frame = read_identity_csv(path)
             self.assertEqual(frame.donor_id.tolist(), ["001", "002"])
+            path.write_text("sample_id\n007\n008\n", encoding="utf-8")
+            self.assertEqual(read_identity_csv(path).sample_id.tolist(), ["007", "008"])
             self.assertEqual(parse_bool_column(frame.eligible, "eligible").tolist(), [True, False])
             with self.assertRaises(SystemExit):
                 parse_bool_column(pd.Series(["Yes", "No"]), "eligible")
@@ -134,6 +139,34 @@ class OpenSourceContract(unittest.TestCase):
             self.assertEqual(reserved.read_bytes(), b"")
             with self.assertRaises(SystemExit):
                 require_new(reserved)
+
+    def test_publish_rolls_back_a_renamed_final(self):
+        import os
+        from stagecraft.io import publish_new_files
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = root / "a.txt"
+            second = root / "b.txt"
+            real = os.rename
+            calls = {"n": 0}
+
+            def rename(src, dst):
+                calls["n"] += 1
+                if calls["n"] > 1:
+                    raise OSError("boom")
+                return real(src, dst)
+
+            def write(partials):
+                partials[0].write_text("a\n", encoding="utf-8")
+                partials[1].write_text("b\n", encoding="utf-8")
+
+            with self.assertRaises(OSError):
+                with unittest.mock.patch("stagecraft.io.os.rename", rename):
+                    publish_new_files([first, second], write)
+            self.assertFalse(first.exists())
+            self.assertFalse(second.exists())
+            self.assertEqual(list(root.iterdir()), [])
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ import pandas as pd
 from scipy import sparse
 from scipy.io import mmread
 
+import part5_eligibility as part5_eligibility
 import part5_pseudobulk as pb
 import part5_source_blocks as sources
 import part6_axes as axes
@@ -317,6 +318,31 @@ class DataConstruction(unittest.TestCase):
         ledger, valid = eligibility.donor_eligibility(cells)
         self.assertTrue(valid.empty)
         self.assertEqual(valid.columns.tolist(), ledger.columns.tolist())
+
+    def test_part5_eligibility_leaves_no_files_when_the_audit_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            frame = pd.DataFrame({
+                "subtype": ["S"] * 12,
+                "dataset": [f"D{i % 3}" for i in range(12)],
+                "source_block": [f"B{i % 3}" for i in range(12)],
+                "dataset_donor_id": [f"d{i:03d}" for i in range(12)],
+                "unit_id": [f"u{i:03d}" for i in range(12)],
+                "n_cells": [40] * 12,
+                "z_log1p_n_cells": [float(i + 1) for i in range(12)],
+                "z_log1p_mean_umi": [float((i + 1) ** 2) for i in range(12)],
+                "jeffreys_per_10pct": [float(i) for i in range(12)],
+                "eligible": ["true"] * 12,
+            })
+            meta = root / "meta.csv"
+            frame.to_csv(meta, index=False)
+            out = root / "eligibility.csv"
+            with patch.object(part5_eligibility.json, "dumps", side_effect=RuntimeError("boom")):
+                with self.assertRaises(RuntimeError):
+                    part5_eligibility.main([str(meta), "--out", str(out)])
+            self.assertFalse(out.exists())
+            self.assertFalse(out.with_suffix(".audit.json").exists())
+            self.assertEqual([path.name for path in root.iterdir() if "partial" in path.name], [])
 
 
 if __name__ == "__main__":

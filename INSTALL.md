@@ -15,7 +15,9 @@ CI runs those Python versions on Linux, macOS, and Windows.
 - Tests and lint: `python -m pip install -r requirements-dev.txt`.
 - Part 1/3 clustering extras (Scrublet, Harmony, igraph, Leiden): `python -m pip install -r requirements-part1.txt`.
 
-Run `python scripts/check_environment.py --stage part5` before Part 5; use
+Run `python scripts/check_environment.py --stage part5` before Part 5. The JSON
+report includes `stagecraft_version`, which confirms which copy of the skill an
+agent loaded. Use
 `part1` through `part6` for the intended stage. Exit 2 blocks that stage.
 The default profile is helper smoke only. Dependency imports do not certify
 model compatibility, scientific validity or human annotation quality.
@@ -43,7 +45,13 @@ Rscript --vanilla tests/scientific_regression.R
 ```
 
 Nonzero exit or TIMEOUT is failure, never a skipped pass.
-`tests/run_r_integration.py --rscript /path/to/Rscript` wraps the two R files.
+`tests/run_r_integration.py --rscript /path/to/Rscript` also runs
+`tests/pathway_contract.R`. CI additionally runs the null-calibration smoke
+and builds the wheel:
+
+```bash
+Rscript --vanilla scripts/calibrate_part5_null.R "$RUNNER_TEMP/part5_null_smoke" 1 7 subtype_specific 8 2 100
+```
 
 ## R (required for Part 5)
 

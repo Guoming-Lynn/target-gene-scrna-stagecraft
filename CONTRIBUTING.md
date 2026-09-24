@@ -18,6 +18,13 @@ python -m pytest -q tests
 python quickstart.py --out quickstart_output
 Rscript --vanilla tests/audit_boundaries.R
 Rscript --vanilla tests/scientific_regression.R
+Rscript --vanilla tests/pathway_contract.R
+```
+
+CI also runs the null-calibration smoke and builds the wheel. The smoke command is:
+
+```bash
+Rscript --vanilla scripts/calibrate_part5_null.R "$RUNNER_TEMP/part5_null_smoke" 1 7 subtype_specific 8 2 100
 ```
 
 Part 6 helper tests do not run Geneformer or distribute any checkpoint. Keep model-specific work in a separately pinned, user-provided environment.

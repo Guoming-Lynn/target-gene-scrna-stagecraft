@@ -8,7 +8,7 @@ authors:
     email: guoming.lin.med@gmail.com
 license: MIT
 repository-code: https://github.com/Guoming-Lynn/target-gene-scrna-stagecraft
-version: 2.3.2
+version: 2.4.0
 date-released: "2026-09-24"
 keywords:
   - single-cell RNA-seq

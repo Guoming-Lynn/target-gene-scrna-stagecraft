@@ -26,7 +26,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 _ensure_repo_on_path(__file__)
 
 from stagecraft import EXIT_GATE, stop  # noqa: E402
-from stagecraft.io import parse_bool_column, read_identity_csv  # noqa: E402
+from stagecraft.io import CSV_EXCEL, parse_bool_column, read_identity_csv, require_new  # noqa: E402
 
 
 def median_order_statistic_interval(values, confidence=0.95):
@@ -227,10 +227,8 @@ def main(argv: list[str] | None = None) -> int:
         perturbations=perts,
         endpoints=endpoints,
     )
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    if args.out.exists():
-        raise SystemExit(f"Refusing to overwrite: {args.out}")
-    table.to_csv(args.out, index=False)
+    require_new(args.out)
+    table.to_csv(args.out, index=False, encoding=CSV_EXCEL)
     n_run = int(table["raw_p_value"].notna().sum())
     print(f"n_family={args.family_size} n_tested={n_run} (family size not shrunk)")
     return 0

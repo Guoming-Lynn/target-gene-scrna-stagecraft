@@ -35,7 +35,7 @@ from plotting_style import (  # noqa: E402
     load_plotting_config,
     save_figure,
 )
-from stagecraft.io import CSV_EXCEL, read_identity_csv  # noqa: E402
+from stagecraft.io import CSV_EXCEL, parse_bool_column, read_identity_csv  # noqa: E402
 from stagecraft.patterns import unlikely_arm_pattern  # noqa: E402
 
 FLAG_COLORS = {
@@ -129,13 +129,10 @@ def identifiability_table(
     if not np.isfinite(cell_counts).all() or (cell_counts < 0).any() or (cell_counts % 1 != 0).any():
         raise SystemExit("n_cells must contain nonnegative integers")
     frame["n_cells"] = cell_counts
-    if "eligible" in frame.columns:
-        flags = frame["eligible"].astype(str).str.strip().str.lower()
-        if not flags.isin(["true", "false", "1", "0"]).all():
-            raise SystemExit("eligible must contain explicit true/false or 1/0 values")
-        eligible = frame.loc[flags.isin(["true", "1"]) & (cell_counts >= min_cells)].copy()
-    else:
-        eligible = frame.loc[frame["n_cells"] >= min_cells].copy()
+    if "eligible" not in frame.columns:
+        raise SystemExit("unit table has no eligible column")
+    flags = parse_bool_column(frame["eligible"], "eligible")
+    eligible = frame.loc[flags & (cell_counts >= min_cells)].copy()
     if source_key not in eligible.columns:
         raise SystemExit(f"unit table missing source column {source_key}")
     rows = []

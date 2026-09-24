@@ -39,7 +39,7 @@ _GENE_COLUMNS = (
     "robust_primary",
 )
 _FOLD_COLUMNS = ("subset", "held_out_block", "status", "rdf")
-_PATHWAY_COLUMNS = ("library", "pathway", "q_bh_camera", "q_bh_fgsea", "same_direction")
+_PATHWAY_COLUMNS = ("library", "pathway", "q_bh_camera", "q_bh_fgsea", "same_direction", "technical_leading_edge_fraction")
 _SIGN_COLUMNS = (
     "endpoint",
     "perturbation",

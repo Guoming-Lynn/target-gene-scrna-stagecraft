@@ -28,7 +28,7 @@ from stagecraft.io import ensure_repo_on_path as _ensure_repo_on_path  # noqa: E
 _ensure_repo_on_path(__file__)
 
 from stagecraft import EXIT_GATE, stop  # noqa: E402
-from stagecraft.io import CSV_EXCEL, exit_reason, parse_bool_column, read_identity_csv, require_new
+from stagecraft.io import CSV_EXCEL, exit_reason, parse_bool_column, publish_new_files, read_identity_csv
 
 
 def _split(raw: str) -> list[str]:
@@ -132,7 +132,9 @@ def evaluate(
     drop_single: bool,
     part4: pd.DataFrame | None,
 ) -> pd.DataFrame:
-    work = meta.loc[parse_bool_column(meta["eligible"], "eligible")].copy() if "eligible" in meta.columns else meta.copy()
+    if "eligible" not in meta.columns:
+        stop("metadata has no eligible column; run part5_pseudobulk.py output through part5_source_blocks.py")
+    work = meta.loc[parse_bool_column(meta["eligible"], "eligible")].copy()
     if work.empty:
         stop("no eligible units", EXIT_GATE)
     rows = []
@@ -174,6 +176,7 @@ def evaluate(
                 hit = part4.loc[mask]
             if not hit.empty and "flag" in hit.columns:
                 part4_flag = str(hit["flag"].iloc[0])
+        # The eligible-unit gate counts donors, as part5_run_models.R does.
         status, reason = flag_arm(
             n_units=int(sub["dataset_donor_id"].nunique()) if "dataset_donor_id" in sub else n,
             n_datasets=int(sub[dataset_key].nunique()) if dataset_key in sub.columns else 0,
@@ -193,7 +196,7 @@ def evaluate(
         rows.append(
             {
                 "arm": arm,
-                "n_units": int(sub["dataset_donor_id"].nunique()) if "dataset_donor_id" in sub.columns else n,
+                "n_units": int(sub["unit_id"].nunique()) if "unit_id" in sub.columns else int(len(sub)),
                 "n_donors": int(sub["dataset_donor_id"].nunique()) if "dataset_donor_id" in sub.columns else n,
                 "n_datasets": int(sub[dataset_key].nunique()) if dataset_key in sub.columns else pd.NA,
                 "n_source_blocks": int(sub[source_key].nunique()) if source_key in sub.columns else pd.NA,
@@ -239,6 +242,11 @@ def main(argv: list[str] | None = None) -> int:
 
     meta = read_identity_csv(args.metadata)
     part4 = read_identity_csv(args.part4) if args.part4 else None
+    if args.source_key not in meta.columns:
+        stop(
+            f"metadata has no {args.source_key!r} column; run part5_source_blocks.py, "
+            f"or pass --source-key {args.dataset_key} to declare datasets as source blocks"
+        )
     table = evaluate(
         meta,
         arm_key=args.arm_key,
@@ -246,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         numeric=_split(args.numeric),
         exposure=args.exposure,
         dataset_key=args.dataset_key,
-        source_key=args.source_key if args.source_key in meta.columns else args.dataset_key,
+        source_key=args.source_key,
         n_formal=args.n_formal,
         n_exploratory=args.n_exploratory,
         min_datasets_formal=args.min_datasets_formal,
@@ -256,18 +264,20 @@ def main(argv: list[str] | None = None) -> int:
         drop_single=not args.keep_single_level,
         part4=part4,
     )
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    require_new(args.out)
-    table.to_csv(args.out, index=False, encoding=CSV_EXCEL)
     audit = {
         "n_arms": int(len(table)),
         "n_formal": int((table["status"] == "formal").sum()),
         "n_exploratory": int((table["status"] == "exploratory").sum()),
         "n_not_estimable": int((table["status"] == "NOT_ESTIMABLE").sum()),
+        "source_key": args.source_key,
     }
     audit_path = args.out.with_suffix(".audit.json")
-    require_new(audit_path)
-    audit_path.write_text(json.dumps(audit, indent=2), encoding="utf-8")
+
+    def write(paths: list[Path]) -> None:
+        table.to_csv(paths[0], index=False, encoding=CSV_EXCEL)
+        paths[1].write_text(json.dumps(audit, indent=2), encoding="utf-8")
+
+    publish_new_files([args.out, audit_path], write)
     print(f"wrote eligibility ({len(table)} arms): {args.out}")
     print(
         f"formal={audit['n_formal']} exploratory={audit['n_exploratory']} "

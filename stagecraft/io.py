@@ -19,6 +19,9 @@ IDENTITY_COLUMNS = (
     "unit_id",
     "cell_id",
     "omitted_donor",
+    "sample_id",
+    "library_id",
+    "source_block",
 )
 _BOOL_TRUE = {"true", "1"}
 _BOOL_FALSE = {"false", "0"}
@@ -71,7 +74,7 @@ def publish_new_files(paths: Sequence[Path], write: Callable[[list[Path]], None]
     """Write every file to a sibling partial, then rename the set into place.
 
     Existence is checked before any final path is created. A failure deletes
-    partials and leaves finals that were not yet renamed untouched.
+    partials and any final already renamed by this call.
     """
     finals = [Path(path) for path in paths]
     if len(finals) != len(set(finals)):
@@ -83,6 +86,7 @@ def publish_new_files(paths: Sequence[Path], write: Callable[[list[Path]], None]
     for path in finals:
         path.parent.mkdir(parents=True, exist_ok=True)
     opened: list[Path] = []
+    published: list[Path] = []
     try:
         for partial in partials:
             fd = os.open(partial, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -95,9 +99,12 @@ def publish_new_files(paths: Sequence[Path], write: Callable[[list[Path]], None]
         for partial, final in zip(partials, finals):
             os.rename(partial, final)
             opened.remove(partial)
+            published.append(final)
     except BaseException:
         for partial in opened:
             partial.unlink(missing_ok=True)
+        for final in published:
+            final.unlink(missing_ok=True)
         raise
 
 

@@ -166,7 +166,7 @@ the design that will actually be fit**.
 
 | Gate | Formal | Exploratory | Dead |
 |---|---|---|---|
-| Eligible units | ≥ 12 | ≥ 8 | `< 8` → do not fit as discovery |
+| Eligible units (counted as distinct donors) | ≥ 12 | ≥ 8 | `< 8` → do not fit as discovery |
 | Datasets / source_blocks | ≥ 3 | ≥ 2 if protocol allows | 1 unless protocol is explicitly single-source |
 | Residual df | ≥ 6 | ≥ 4 | below → `NOT_ESTIMABLE` |
 | Holdout fit floor | `min_rdf_holdout` 3 | same value | below the floor → `NOT_ESTIMABLE` |
@@ -414,10 +414,11 @@ Do not fill them with true simply to obtain a pass. The example sensitivity
 caveat row precedes the unrestricted pass and retains every primary gate.
 
 The pathway helper verifies all GMT SHA-256 values itself and adjusts q over
-all loaded libraries within each method. It emits `dual_method_candidate`,
-with `robust_primary` unset until pathway-level LODO and technical leading-edge
-checks are implemented in the stage's integration code. Part 5 remains
-unfinished until these declared checks and confound diagnostics are complete.
+all loaded libraries within each method. It emits `dual_method_candidate` and
+writes `leading_edge`, `technical_leading_edge_fraction`, and
+`technical_leading_edge_pass`. `robust_primary` stays unset until pathway-level
+LODO is implemented. Part 5 remains unfinished until that check and the
+confound diagnostics are complete.
 
 For input provenance, `hash_inputs.py --verify` compares explicit
 `{path, sha256}` entries or sibling `h5ad`/`h5ad_sha256` fields. Relative paths

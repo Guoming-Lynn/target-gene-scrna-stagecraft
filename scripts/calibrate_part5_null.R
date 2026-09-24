@@ -5,6 +5,7 @@
 # This starts at pseudobulk counts. It does not calibrate QC, annotation, pathways
 # or Geneformer. No non-null power or MDE is inferred from a null experiment.
 suppressPackageStartupMessages({library(Matrix); library(yaml); library(jsonlite); library(digest)})
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
 cli <- commandArgs(trailingOnly=TRUE)
 if (!length(cli)) stop("Provide a new output directory")
 arg <- function(i, default) if (length(cli) >= i) cli[[i]] else default
